@@ -1,0 +1,22 @@
+/* 疾病概要整页浮层（36 号 / P 组）—— 与家族 primer 样式同构 */
+.dp-overlay { position: fixed; inset: 0; z-index: 150; background: var(--paper); display: flex; flex-direction: column; }
+.dp-panel { flex: 1; display: flex; flex-direction: column; min-height: 0; width: min(880px, 94vw); margin: 0 auto; }
+.dp-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; }
+.dp-head .crumb { color: var(--muted); font-size: 13px; }
+.dp-head h2 { font-size: 16px; flex: 1; min-width: 0; }
+.dp-body { flex: 1; overflow-y: auto; padding: 18px 22px 48px; }
+.dp-inner { max-width: 760px; margin: 0 auto; }
+.dp-section { margin-bottom: 26px; }
+.dp-section h3 { font-size: 18px; padding-bottom: 6px; border-bottom: 2px solid var(--brand-soft); }
+.dp-lead { color: var(--ink-2); margin: 10px 0; }
+.dp-group h4 { font-size: 14.5px; margin: 14px 0 6px; color: var(--brand-deep); }
+.dp-group ul { margin: 4px 0; padding-left: 20px; }
+.dp-group li { margin: 4px 0; }
+.dp-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
+.dp-table th, .dp-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.dp-table th { background: var(--paper); font-size: 12.5px; color: var(--muted); }
+.dp-src { font-size: 12.5px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 12px; margin-top: 10px; }
+.dp-src b { color: var(--ink-2); }
+.dp-src-missing { color: var(--danger); font-weight: 600; }
+.dp-miss { color: var(--danger); }
+html.dp-lock { overflow: hidden; }
