@@ -81,6 +81,6 @@
 - check：staticPass=true（20 步——新增 check-trial-matching.mjs，self-test 10/10）。
 - tests：21/21。audit：44/44 · 0 失败 · 0 待人工。
 - probe-tak-m2：**57/57**（新增 A5/A6/A7/A8/C1/C3/C4/D1/D2/D5/E2/E3b/E4/E4b/E5/E5b/E6/E8/F3/F3b/F4/F4b/F6 共 25 条 Inspector 回归断言）；primer 10/10。
-- 版本：0.2.0 → **0.3.0**（改包必升版；新增 0003 hospital 迁移；已重装 DSH Desktop harness profile 并实查 0.3.0）。
+- 版本：0.2.0 → **0.3.1**（改包必升版；新增 0003 hospital 迁移；0.3.1 修匹配卡布局；已重装 DSH Desktop harness profile 实查）。
 - 截图：13 张 v0.3.0（新增 settings / trials-match）。
 - 修复覆盖：报告 ③ 所列 16 组失败全部关闭（C1–C5、D1–D2、E2–E10、F1–F6、G5、A1/A5/A6/A7/A8、B2）；I2 装机截图仍待人工（DSH Desktop 重启）。

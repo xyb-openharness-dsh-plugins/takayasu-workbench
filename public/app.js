@@ -965,7 +965,7 @@
       var saved = state.savedTrials || {};
       var savedKeys = Object.keys(saved);
       out += '<div class="section-title"><h2>候选线索</h2><p>收藏后逐条核对；可拒收零副作用。收藏只存本机 {试验, 日期, 状态}。</p></div>';
-      out += '<div class="metric-grid">' + matches.list.map(trialMatchCard).join('') + '</div>';
+      out += '<div>' + matches.list.map(trialMatchCard).join('') + '</div>';
       out += '<div class="section-title"><h2>收藏与跟踪（' + savedKeys.length + '）</h2><p>在跟 / 准备问 / 已归档；快照没有登记状态变化时间线——<b>没有就是没有，不画假进度条</b>。</p></div>';
       if (!savedKeys.length) {
         out += '<div class="empty"><div class="big">还没有收藏</div><p>在匹配卡上点「收藏为线索」。</p></div>';
