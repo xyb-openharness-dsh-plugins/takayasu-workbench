@@ -1,6 +1,6 @@
 /* 小弓宝 ArchPal · 大动脉炎工作台原型 v0.2.0
  * 全部为合成示例；未接入 DSH / AI；候选核对前不入图；私密三出口共用同一过滤。
- * 结构底本：cervical v0.2（外壳/链路）+ breast v0.4（指标卡/眉题/五 Tab）+ aml v0.2（AI 面板/泳道/折叠卡）。
+ * 外壳与组件结构为小 X 宝家族通用元素体系（原型声明条/侧栏/顶栏、定高 3D 指标卡、右侧 AI 面板、事件泳道、原生折叠卡）。
  * 非肿瘤红线：无分期、无线序、无疗效；活动度只存医生原文；阈值一律【待核】。
  */
 (function () {
@@ -683,8 +683,8 @@
   function prepSection(p) {
     var map = pointsByCode();
     var esr = (map.esr || []).slice(-1)[0], crp = (map.crp || []).slice(-1)[0];
-    var bp = (p.bpRecords || []).slice(-1)[0];
-    var meds = (p.meds || []).slice(-1)[0];
+    var bp = filterPrivate(p.bpRecords || []).slice(-1)[0];
+    var meds = filterPrivate(p.meds || []).slice(-1)[0];
     var items = [];
     if (esr) items.push('最近血沉 ' + esr.value + ' ' + esr.unit + '（' + esr.date + '）');
     if (crp) items.push('最近 CRP ' + crp.value + ' ' + crp.unit + '（' + crp.date + '）');
@@ -791,7 +791,7 @@
         out += '<div class="row" style="margin-top:10px">' + aiBtn() + '<span class="k">点「和 AI 讨论」也不会携带私密条目。</span></div>';
       }
     } else {
-      out += '<div class="card"><h3>家庭负担与照护者</h3><p class="k">把「家里人帮了什么、什么最难开口」留在这里；与 aml-workbench 心智负担线同构，内容为本病种原创。</p>' +
+      out += '<div class="card"><h3>家庭负担与照护者</h3><p class="k">把「家里人帮了什么、什么最难开口」留在这里；内容为本病种原创。</p>' +
         '<div class="empty"><div class="big">暂无条目</div><p>例：谁陪诊、谁记血压、谁管药盒。</p><button class="primary" data-action="noop">记一条（原型未实现录入）</button></div></div>';
     }
     return out;

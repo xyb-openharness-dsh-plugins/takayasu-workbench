@@ -46,11 +46,11 @@
     out += '<h3>' + sec.title + '</h3>';
     if (sec.intro) out += '<p class="dp-lead">' + sec.intro + '</p>';
     if (sec.points && sec.points.length) {
-      out += '<ul>' + sec.points.map(function (p) { return '<li>' + p + '</li>'; }).join('') + '</ul>';
+      out += '<ul class="dp-points">' + sec.points.map(function (p) { return '<li>' + p + '</li>'; }).join('') + '</ul>';
     }
     if (sec.groups && sec.groups.length) {
       out += sec.groups.map(function (g) {
-        return '<div class="dp-group"><h4>' + g.label + '</h4><ul>' +
+        return '<div class="dp-group"><h4>' + g.label + '</h4><ul class="dp-points">' +
           g.points.map(function (p) { return '<li>' + p + '</li>'; }).join('') + '</ul></div>';
       }).join('');
     }
@@ -89,10 +89,10 @@
     el.innerHTML =
       '<div class="dp-panel">' +
       '<div class="dp-head">' +
-      '<button class="ghost dp-back" type="button">返回</button>' +
+      '<button class="ghost dp-back" type="button" data-dp="back">返回</button>' +
       '<div class="crumb">小弓宝 <span>/</span> 疾病概要</div>' +
       '<h2 id="dp-title">大动脉炎是什么</h2>' +
-      '<button class="icon-button dp-close" type="button" aria-label="关闭疾病概要">×</button>' +
+      '<button class="icon-button dp-close" type="button" data-dp="close" aria-label="关闭疾病概要">×</button>' +
       '</div>' +
       '<div class="dp-body">' + build() + '</div>' +
       '</div>';
@@ -124,8 +124,8 @@
     el.hidden = true;
     document.documentElement.classList.remove('dp-lock');
     var t = document.querySelectorAll('[data-primer-open]')[0];
-    if (t) t.setAttribute('aria-expanded', 'false');
-    if (opener && opener.focus) opener.focus();
+    if (t) { t.setAttribute('aria-expanded', 'false'); try { t.focus(); } catch (e) {} }
+    if (opener && opener.focus) { try { opener.focus(); } catch (e) {} }
     if (window.scrollTo) window.scrollTo(0, prevScroll);
   }
 
@@ -146,6 +146,12 @@
     }
     if (location.hash === '#disease-primer') show();
   }
+
+  window.DiseasePrimer = {
+    isOpen: function () { return !!(el && !el.hidden); },
+    open: function () { show(); },
+    close: function () { close(); }
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);
