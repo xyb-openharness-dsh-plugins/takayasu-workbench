@@ -59,9 +59,24 @@
     life: '疲劳与功能只记你自己的描述，不打分、不评级。',
     mind: '害怕、疲惫、对未来的担心都算正常反应；这里的内容默认私密。',
     chart: '把化验、血压、事件放回同一段时间，看见变化发生在哪一步。',
-    trials: '真实登记摘录 + 候选线索；匹配与否要和医生商量，不提供匹配指数。',
+    trials: '真实登记摘录 + 候选线索；收藏后逐条核对，要不要追问由你和医生决定。',
     docs: '原件永远保留；解析结果只是候选，接受之前不入库。'
   };
+  var ROUTES = [
+    'dashboard',
+    'dx/dx-doc', 'dx/dx-vessel', 'dx/dx-imaging', 'dx/dx-mdt',
+    'vessels/v-map', 'vessels/v-bp', 'vessels/v-event',
+    'labs/lab-trend', 'labs/lab-cbc', 'labs/lab-import',
+    'meds/med-gluc', 'meds/med-imm', 'meds/med-note',
+    'review/review-rhythm', 'review/review-screen', 'review/review-prep',
+    'preg/preg-list', 'preg/preg-track',
+    'life/life-func', 'life/life-daily',
+    'mind/mind-feel', 'mind/mind-burden',
+    'chart/ch-trend', 'chart/ch-event', 'chart/ch-caliber',
+    'trials/tr-facts', 'trials/tr-search', 'trials/tr-match',
+    'docs/docs-lib', 'docs/docs-cand', 'docs/docs-prep'
+  ];
+
   var AI_HINTS = {
     dashboard: '这是我的大动脉炎随访看板（合成示例数据）。请帮我看看下次复诊前，哪些资料还缺：目前有确诊记录、血管节段记录、化验、四肢血压和用药记录。只列问题，不要给医疗建议。',
     dx: '我的确诊档案页（合成示例）。请帮我把「确诊经过与依据」整理成复诊时可以给医生看的时间线：症状开始（月份）、确诊日期、医生诊断原话摘要。不要判断病情。',
@@ -844,7 +859,7 @@
       out += '<div class="notice"><b>双通道检索</b>：本原型内置真实登记摘录（ClinicalTrials.gov 公开页摘录，检索日期 2026-11-05）；真实在线检索在开发版接入。</div>';
       out += trialsTable();
     } else {
-      out += '<div class="notice"><b>候选线索</b>：收藏后逐条核对；<b>无匹配指数、无判读列</b>——是否适合要和医生商量。</div>';
+      out += '<div class="notice"><b>候选线索</b>：收藏后逐条核对；不提供打分排序，是否适合要和医生商量。</div>';
       out += '<div class="empty"><div class="big">暂无收藏线索</div><p>在检索结果里点「收藏为线索」。</p><button class="primary" data-action="go" data-view="trials" data-sub="tr-search">去检索</button></div>';
     }
     return out;

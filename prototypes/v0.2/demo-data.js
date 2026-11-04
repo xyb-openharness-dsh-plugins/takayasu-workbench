@@ -54,8 +54,8 @@
     metrics: [
       { code: 'esr', points: [{ date: '2026-09-10', value: 46, unit: 'mm/h', method: 'Westergren', org: '市人民医院' }, { date: '2026-10-22', value: 31, unit: 'mm/h', method: 'Westergren', org: '市人民医院' }] },
       { code: 'crp', points: [{ date: '2026-09-10', value: 24.6, unit: 'mg/L', method: '免疫比浊', org: '市人民医院' }, { date: '2026-10-22', value: 9.8, unit: 'mg/L', method: '免疫比浊', org: '市人民医院' }] },
-      { code: 'hb', points: [{ date: '2026-09-10', value: 108, unit: 'g/L', method: '血细胞分析仪', org: '市人民医院' }] },
       { code: 'wbc', points: [{ date: '2026-09-10', value: 9.2, unit: '×10⁹/L', method: '血细胞分析仪', org: '市人民医院' }] },
+      { code: 'hb', points: [{ date: '2026-09-10', value: 108, unit: 'g/L', method: '血细胞分析仪', org: '市人民医院' }] },
       { code: 'creat', points: [{ date: '2026-09-10', value: 64, unit: 'μmol/L', method: '酶法', org: '市人民医院' }] }
     ],
     bpRecords: [
@@ -146,6 +146,11 @@
         { date: '2026-08-14', value: 1.6, unit: 'mg/L', method: '免疫比浊', org: '省风湿病专科医院' },
         { date: '2026-10-26', value: 2.1, unit: 'mg/L', method: '免疫比浊', org: '省风湿病专科医院' }
       ] },
+      { code: 'wbc', points: [
+        { date: '2018-02-26', value: 11.3, unit: '×10⁹/L', method: '血细胞分析仪', org: '省风湿病专科医院' },
+        { date: '2021-05-12', value: 6.8, unit: '×10⁹/L', method: '血细胞分析仪', org: '省风湿病专科医院' },
+        { date: '2025-08-05', value: 6.1, unit: '×10⁹/L', method: '血细胞分析仪', org: '省风湿病专科医院' }
+      ] },
       { code: 'hb', points: [
         { date: '2018-02-26', value: 96, unit: 'g/L', method: '血细胞分析仪', org: '省风湿病专科医院' },
         { date: '2019-03-20', value: 112, unit: 'g/L', method: '血细胞分析仪', org: '省风湿病专科医院' },
@@ -153,11 +158,6 @@
         { date: '2022-09-08', value: 117, unit: 'g/L', method: '血细胞分析仪', org: '省风湿病专科医院' },
         { date: '2024-11-18', value: 126, unit: 'g/L', method: '血细胞分析仪', org: '省风湿病专科医院' },
         { date: '2025-08-05', value: 128, unit: 'g/L', method: '血细胞分析仪', org: '省风湿病专科医院' }
-      ] },
-      { code: 'wbc', points: [
-        { date: '2018-02-26', value: 11.3, unit: '×10⁹/L', method: '血细胞分析仪', org: '省风湿病专科医院' },
-        { date: '2021-05-12', value: 6.8, unit: '×10⁹/L', method: '血细胞分析仪', org: '省风湿病专科医院' },
-        { date: '2025-08-05', value: 6.1, unit: '×10⁹/L', method: '血细胞分析仪', org: '省风湿病专科医院' }
       ] },
       { code: 'plt', points: [
         { date: '2018-02-26', value: 402, unit: '×10⁹/L', method: '血细胞分析仪', org: '省风湿病专科医院' },
