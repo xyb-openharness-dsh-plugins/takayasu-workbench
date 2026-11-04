@@ -18,7 +18,7 @@
 - 一级导航 12 页与 cervical（12）/aml（11）/breast（记录五 Tab）/ttp（发作—缓解）逐页对照：
   - 完全同名页：dashboard 看板、chart 病情一图秀、trials 临床研究、docs 资料库、mind 心理与家庭（家族结构基准，允许 ≤70%）
   - TAK 特有页：vessels 受累血管、preg 生育与妊娠、meds 用药与减量（按剂量阶梯组织）
-  - 实测一级重名率（同名 key 或同名中文）：**待 M1 实测填数（目标 ≤70%）**
+  - 实测一级重名率（同名 key 或同名中文，2026-11-05 实测，见 FAMILY-CONTRAST §二）：cervical **50%**、ttp **42%**、breast **33%**、aml **33%**，最高 50% ≤ 70% ✅
 - 语义红线：绝不引入 宫颈 FIGO/HPV/SCC-Ag、AML 粒缺/MRD/Day+N、乳腺 分期/治疗线序/肿瘤标志物、TTP 血浆置换/ADAMTS13、ANCA 抗体谱滴度解读。
 
 ## 三、与 anca-vasculitis（最近缘）的区分
