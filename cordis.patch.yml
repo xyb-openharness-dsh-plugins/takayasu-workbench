@@ -1,0 +1,6 @@
+- insert:
+    - id: takayasu-workbench-main
+      name: "@xyb-community/takayasu-workbench"
+      # 服务端声明数据根目录：DSH_HOME 下按 slug 隔离的资料目录
+      config:
+        root: !!js dshHomePath('takayasu')
