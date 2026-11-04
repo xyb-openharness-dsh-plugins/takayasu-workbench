@@ -27,6 +27,19 @@
     toast._t = setTimeout(function () { t.classList.remove('show'); }, 2600);
   }
   function deltaWord(diff) { return diff > 0 ? '↑' : (diff < 0 ? '↓' : '→'); }
+  function maskToken(tok) {
+    var t = String(tok || '');
+    if (!t) return '未设置';
+    return t.length <= 4 ? '****' : '****' + t.slice(-4);
+  }
+  document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'mu-consent') {
+      var ti = $('#mu-token');
+      var note = $('#mu-consent-note');
+      if (ti) ti.disabled = !e.target.checked;
+      if (note) note.textContent = e.target.checked ? '已同意；本仓未接入 MinerU——粘贴与保存不联网，仅存本机。' : '未勾选前不会上传，也不会调用 MinerU。';
+    }
+  });
 
   /* ---------- 导航注册表（与 docs/INTERACTION-DESIGN.md 逐字一致） ---------- */
   var PAGES = [
@@ -270,7 +283,7 @@
     }
     var win = state.timeWindow;
     var now = Date.now();
-    var winMs = win === '3m' ? 90 * 864e5 : (win === '1y' ? 365 * 864e5 : Infinity);
+    var winMs = win === '3m' ? 90 * 864e5 : (win === '6m' ? 182 * 864e5 : (win === '12m' ? 365 * 864e5 : Infinity));
     var out = '<div class="chart-card"><svg class="chart" viewBox="0 0 ' + CW + ' ' + CH + '" role="img" aria-label="所选指标趋势图，各序列按自身范围归一化，不可比">';
     var legend = '';
     var colors = ['var(--brand)', 'var(--teal)', 'var(--plum)'];
@@ -340,7 +353,7 @@
     }
     out += '<div class="legend">' + legend + '</div>';
     out += '<div class="row" style="margin-top:10px"><span class="time-window" role="group" aria-label="时间窗">' +
-      [['all', '全部'], ['1y', '近 1 年'], ['3m', '近 3 月']].map(function (o) {
+      [['all', '全部'], ['12m', '近 12 月'], ['6m', '近 6 月'], ['3m', '近 3 月']].map(function (o) {
         return '<button data-action="tw" data-w="' + o[0] + '" aria-pressed="' + (state.timeWindow === o[0]) + '">' + o[1] + '</button>';
       }).join('') + '</span>' +
       '<button class="ghost" data-action="toggle-events" aria-pressed="' + state.showEvents + '">' + (state.showEvents ? '隐藏事件条' : '显示事件条') + '</button>' +
@@ -367,7 +380,7 @@
 
   var VIEWS = {};
 
-  /* —— 看板 —— */
+  /* —— 看板（A5 大状态卡 / A6 行动带 / A7 快捷卡三连）—— */
   VIEWS.dashboard = function () {
     var p = P();
     var map = pointsByCode();
@@ -378,18 +391,47 @@
     var evN = (p.events || []).length;
     var docsN = (p.docs || []).length;
     var candN = (p.candidates || []).filter(function (c) { return !c.verified; }).length;
-    var lastVisit = (p.events || []).filter(function (e) { return e.type === '就诊'; }).slice(-1)[0];
+    var visits = (p.events || []).filter(function (e) { return e.type === '就诊'; });
+    var lastVisit = visits.slice(-1)[0];
+    var daysSince = null;
+    if (lastVisit && /^\d{4}-\d{2}-\d{2}$/.test(lastVisit.date)) {
+      daysSince = Math.max(0, Math.round((Date.now() - new Date(lastVisit.date + 'T00:00:00').getTime()) / 864e5));
+    }
+    var esrPts = (map.esr || []).slice().sort(byDate);
+    var esrLast = esrPts.slice(-1)[0], esrPrev = esrPts.slice(-2)[0];
+    var esrDelta = esrLast && esrPrev ? (esrLast.value - esrPrev.value) : null;
     var heroActions = '<button class="primary" data-action="primer-open-soft">疾病概要：大动脉炎是什么？</button>' +
       '<button class="ghost" data-action="go" data-view="review" data-sub="review-prep">准备下次复诊</button>';
-    var out = head('看板', p.name + ' · ' + p.meta + '（合成示例档案）', heroActions);
+    var out = head('今天，先把随访资料记清楚。', p.name + ' · ' + p.meta + '（合成示例档案）', heroActions);
+    /* A5 大状态卡：大字状态（读时算，不落库）+ 医生原话句 */
+    out += '<div class="status-card"><div class="sc-eyebrow">稳定随访 · 距上次就诊 · 待核对候选 ' + candN + ' 项</div>' +
+      '<div class="sc-big">' + (daysSince !== null ? '第 ' + daysSince + ' 天' : '首次建档') + '</div>' +
+      '<div class="sc-anchor">' + (lastVisit
+        ? '锚点 <span class="date">' + esc(lastVisit.date) + '</span>（最近一次就诊）· 由事件时间线算出，不手填、不做状态判定'
+        : '还没有就诊记录 · 记一次就诊后这里会显示间隔天数') + '</div>' +
+      (lastVisit ? '<div class="sc-visit"><span class="pill brand">就诊</span> <span class="date">' + esc(lastVisit.date) + '</span> · ' + esc(lastVisit.text) + '</div>' : '') +
+      (p.dxText ? '<div class="sc-quote">医生原话（摘要照抄）：" ' + esc(p.dxText) + ' "</div>' : '') +
+      '<div class="actions"><button class="primary" data-action="go" data-view="review" data-sub="review-rhythm">看复查节奏</button>' +
+      '<button class="ghost" data-action="go" data-view="dx" data-sub="dx-doc">确诊档案</button></div>' +
+      '</div>';
+    /* A6 行动带：暖底 + 左 5px 色条 + 右侧主按钮组 */
+    if (esrLast) {
+      out += '<div class="action-band"><div class="ab-main"><b>最近血沉 ' + esc(esrLast.value) + ' ' + esc(PROTO.metricDefs[0].unit) + '</b>' +
+        (esrDelta !== null ? '，较上次 ' + deltaWord(esrDelta) + ' ' + Math.abs(esrDelta) : '') +
+        '（<span class="date">' + esc(esrLast.date) + '</span> · ' + esc(esrLast.org || '来源未填') + '）' +
+        '<div class="k">工作台不做判断，是不是要处理请以医生意见为准。</div></div>' +
+        '<div class="ab-actions"><button class="primary" data-action="go" data-view="labs" data-sub="lab-trend">看指标趋势</button>' +
+        '<button class="ghost" data-action="go" data-view="review" data-sub="review-prep">带去复诊的问题</button></div></div>';
+    } else {
+      out += '<div class="action-band"><div class="ab-main"><b>还没有化验记录</b><div class="k">记一条血沉/CRP，行动带会显示最近值与「较上次」。</div></div>' +
+        '<div class="ab-actions"><button class="primary" data-action="go" data-view="labs" data-sub="lab-import">去记化验</button></div></div>';
+    }
     out += '<div class="notice"><b>本页全部为合成示例</b> · 仅演示，未连接真实病历与宿主 · 解读归医生。0 患者访谈、0 临床审核（见 README）。</div>';
+    /* A7 快捷卡三连：图标 + 标题 + 一句说明 + ↗ */
     out += '<div class="grid3" style="margin-top:14px">' +
-      dashCard('血管节段记录', vesselN + ' 次', 'vessels', 'v-map') +
-      dashCard('化验记录', 'ESR ' + esrN + ' 次 / CRP ' + crpN + ' 次', 'labs', 'lab-trend') +
-      dashCard('四肢血压', bpN + ' 次', 'vessels', 'v-bp') +
-      dashCard('用药记录', medN + ' 条', 'meds', 'med-gluc') +
-      dashCard('事件时间线', evN + ' 条', 'chart', 'ch-event') +
-      dashCard('资料与候选', docsN + ' 份 · 待核对 ' + candN, 'docs', 'docs-cand') +
+      quickCard('≣', '记一条化验', '拿到化验单，先记血沉和 CRP', 'labs', 'lab-import') +
+      quickCard('⌇', '记一次血压', '两臂都量，成对记录自动算「较上次」', 'vessels', 'v-bp') +
+      quickCard('▦', '整理复诊问题', '把最近变化整理成给医生的问题清单', 'review', 'review-prep') +
       '</div>';
     out += '<div class="section-title"><h2>最近变化</h2><p>只列已发生事实（医生原话/报告原文），不做判定。</p></div>';
     var evs = (p.events || []).slice(-4).reverse();
@@ -404,17 +446,16 @@
       metricCard(PROTO.metricDefs[0], (map.esr || []).slice().sort(byDate)) +
       metricCard(PROTO.metricDefs[1], (map.crp || []).slice().sort(byDate)) +
       '</div>';
-    if (lastVisit) {
-      out += '<div class="notice" style="margin-top:14px">上次就诊：<span class="date">' + esc(lastVisit.date) + '</span> · ' + esc(lastVisit.text) + '。<b>下次该查什么去「复诊与筛查」。</b></div>';
-    } else {
+    if (!lastVisit) {
       out += '<div class="empty" style="margin-top:14px"><div class="big">还没有就诊记录</div><button class="primary" data-action="go" data-view="review" data-sub="review-rhythm">去复查节奏</button></div>';
     }
     return out;
   };
-  function dashCard(label, val, view, sub) {
-    return '<button class="card" data-action="go" data-view="' + view + '" data-sub="' + sub + '" style="text-align:left;cursor:pointer;min-height:44px">' +
-      '<div class="k">' + esc(label) + '</div><div style="font-size:19px;font-weight:700;margin-top:4px">' + esc(val) + '</div>' +
-      '<div class="k" style="margin-top:6px">查看 →</div></button>';
+  function quickCard(icon, title, desc, view, sub) {
+    return '<button class="quick-card" data-action="go" data-view="' + view + '" data-sub="' + sub + '">' +
+      '<span class="qc-icon" aria-hidden="true">' + icon + '</span>' +
+      '<span class="qc-main"><b>' + esc(title) + '</b><span class="k">' + esc(desc) + '</span></span>' +
+      '<span class="qc-arrow" aria-hidden="true">↗</span></button>';
   }
   function byDate(a, b) { return a.date < b.date ? -1 : 1; }
   function tlItem(e) {
@@ -437,6 +478,7 @@
         '<p class="k">确诊日期：<span class="date">' + esc(fmtDate(p.diagnosisDate)) + '</span> · ' + esc(p.hospital || '医院未填') + '</p>' +
         '<p class="k">仅回顾，不解读；诊断以医生书面结论为准。</p></div>';
       out += '<div class="section-title"><h2>确诊依据材料</h2><p>原件与草稿分开；未取得原件的标注来源。</p></div>' + docsTable(p.docs);
+      out += hospitalsSection(p);
     } else if (sub === 'dx-vessel') {
       out += vesselRecordList(p);
     } else if (sub === 'dx-imaging') {
@@ -534,8 +576,9 @@
   function bpSection(p) {
     var recs = (p.bpRecords || []).slice().sort(byDate).reverse();
     var out = '<div class="notice"><b>口径</b>：两臂血压差异与踝肱数值由医生解读；这里只记数字与「较上次差值」，<b>不做分级、不下结论</b>。同日多组测量按独立条目记，不推断先后。</div>';
+    out += '<div class="row" style="margin-bottom:10px"><button class="primary" data-action="form-bp">记一条血压</button><span class="k">踝部血压当日没测就不填，显示「未测」。</span></div>';
     if (!recs.length) {
-      out += '<div class="empty"><div class="big">还没有血压记录</div><p>按医生嘱咐的部位量（通常双臂，有时加踝）。</p><button class="primary" data-action="demo-add-bp">记一条血压（演示）</button></div>';
+      out += '<div class="empty"><div class="big">还没有血压记录</div><p>按医生嘱咐的部位量（通常双臂，有时加踝）。</p></div>';
       return out;
     }
     out += '<div class="bp-grid">';
@@ -580,6 +623,7 @@
     } else if (sub === 'lab-cbc') {
       out += metricGroups(map, ['血常规']);
     } else if (sub === 'lab-import') {
+      out += '<div class="row" style="margin-bottom:10px"><button class="primary" data-action="form-lab">手工录入化验</button><span class="k">解析候选照样在下方逐条核对。</span></div>';
       out += candidatesSection();
     }
     return out;
@@ -633,6 +677,7 @@
         }).join('') + '</tbody></table></div>';
     }
     if (sub === 'med-gluc') {
+      out += '<div class="row" style="margin-bottom:10px"><button class="primary" data-action="form-med">记一次调药</button><span class="k">药名、剂量、医生原话照抄，不做建议。</span></div>';
       out += medRows('糖皮质激素');
       var gluc = meds.filter(function (m) { return m.cat === '糖皮质激素' && m.doseMg; }).slice().sort(byDate);
       if (gluc.length > 1) {
@@ -752,9 +797,10 @@
             (q.verified && q.asked ? ' <span class="k">' + esc(q.asked) + '</span>' : '') +
             (q.verified ? '' : ' <button class="ghost" data-action="verify-preg" data-i="' + i + '">核对</button> <button class="ghost" data-action="reject-preg" data-i="' + i + '">拒收</button>') + '</li>';
         }).join('') + '</ul>';
-        out += '<div class="row">' + aiBtn() + '</div>';
+        out += '<div class="row"><button class="primary" data-action="form-pregq">加一条问题</button>' + aiBtn() + '</div>';
       }
     } else if (sub === 'preg-track') {
+      out += '<div class="row" style="margin-bottom:10px"><button class="primary" data-action="form-pregtrack">记一条妊娠随访</button><span class="k">产科与风湿科双线，按日期挂。</span></div>';
       var tr = p.pregTrack || [];
       if (!tr.length) {
         out += '<div class="empty"><div class="big">暂无妊娠随访记录</div><p>如果怀孕了，产科与风湿科的随访记录按日期记在这里。</p><button class="primary" data-action="noop">记一条（原型未实现录入）</button></div>';
@@ -779,7 +825,7 @@
       out += '<div class="swimlane"><div class="lane-head">功能与疲劳 · ' + entries.length + ' 条</div><div class="lane-body">' +
         entries.slice().reverse().map(function (e) { return '<div class="tl-item"><span class="d">' + esc(e.date) + '</span><span class="badge"><span class="pill">自述</span></span><span class="tx">' + esc(e.text) + '</span></div>'; }).join('') +
         '</div></div>';
-      out += '<div class="row" style="margin-top:10px">' + aiBtn() + '</div>';
+      out += '<div class="row" style="margin-top:10px"><button class="primary" data-action="form-life">记一条日常</button>' + aiBtn() + '</div>';
     } else {
       out += '<div class="empty"><div class="big">日常生活记录待建</div><p>饮食、睡眠、运动等日常条目。</p><button class="primary" data-action="noop">记一条（原型未实现录入）</button></div>';
     }
@@ -803,7 +849,7 @@
           entries.slice().reverse().map(function (e) {
             return '<div class="tl-item"><span class="d">' + esc(e.date) + '</span><span class="badge">' + (e.private ? '<span class="pill red">私密</span>' : '<span class="pill">一般</span>') + '</span><span class="tx">' + esc(e.text) + '</span></div>';
           }).join('') + '</div></div>';
-        out += '<div class="row" style="margin-top:10px">' + aiBtn() + '<span class="k">点「和 AI 讨论」也不会携带私密条目。</span></div>';
+        out += '<div class="row" style="margin-top:10px"><button class="primary" data-action="form-mind">记一条感受</button><span class="k">默认私密。</span>' + aiBtn() + '<span class="k">点「和 AI 讨论」也不会携带私密条目。</span></div>';
       }
     } else {
       out += '<div class="card"><h3>家庭负担与照护者</h3><p class="k">把「家里人帮了什么、什么最难开口」留在这里；内容为本病种原创。</p>' +
@@ -812,18 +858,44 @@
     return out;
   };
 
-  /* —— 病情一图秀 —— */
+  /* —— 病情一图秀（D1 rail 双栏 / D2 rail 三节 / D5 私密标注）—— */
   VIEWS.chart = function () {
     var sub = state.sub || 'ch-trend';
     var out = head('病情一图秀', SUBTITLES.chart);
     out += subnav('chart', sub);
     if (sub === 'ch-trend') {
-      out += '<div class="row" style="margin-bottom:10px">' + PROTO.metricDefs.map(function (d) {
+      var rail = '<aside class="chart-rail" aria-label="图表选择栏">';
+      rail += '<div class="rail-sec"><div class="rail-h">时间范围</div><div class="rail-chips">' +
+        [['all', '全部'], ['12m', '近 12 月'], ['6m', '近 6 月'], ['3m', '近 3 月']].map(function (o) {
+          return '<button data-action="tw" data-w="' + o[0] + '" aria-pressed="' + (state.timeWindow === o[0]) + '">' + o[1] + '</button>';
+        }).join('') + '</div></div>';
+      var groups = {};
+      PROTO.metricDefs.forEach(function (d) { (groups[d.cat] || (groups[d.cat] = [])).push(d); });
+      rail += '<div class="rail-sec"><div class="rail-h">选择指标（最多 4 条）</div>';
+      var map = pointsByCode();
+      Object.keys(groups).forEach(function (cat) {
+        rail += '<div class="rail-cat">' + esc(cat) + '</div>';
+        groups[cat].forEach(function (d) {
+          var on = state.sel.indexOf(d.code) >= 0;
+          var pts = (map[d.code] || []).slice().sort(byDate);
+          var last = pts.slice(-1)[0];
+          rail += '<label class="rail-item"><input type="checkbox" data-action="sel-check" data-code="' + esc(d.code) + '"' + (on ? ' checked' : '') + '>' +
+            '<span class="sw" style="background:' + selColor(d.code) + '"></span>' + esc(d.name) +
+            '<span class="rail-last num">' + (last ? last.value + ' ' + d.unit : '—') + '</span></label>';
+        });
+      });
+      rail += '</div>';
+      rail += '<div class="rail-sec"><div class="rail-h">显示内容</div><div class="rail-chips">' +
+        '<button data-action="toggle-events" aria-pressed="' + state.showEvents + '">事件条</button></div></div>';
+      var privMind = (P().mindEntries || []).filter(isPrivate).length;
+      rail += '<div class="rail-note k">图内只画已核对记录；私密 ' + privMind + ' 条不含（心理记录不入图）。</div>';
+      rail += '</aside>';
+      var main = '<div class="chart-main"><div class="row" style="margin-bottom:10px">' + PROTO.metricDefs.map(function (d) {
         var on = state.sel.indexOf(d.code) >= 0;
         return '<button class="ghost" data-action="sel" data-code="' + esc(d.code) + '" aria-pressed="' + on + '">' + esc(d.name) + '</button>';
-      }).join('') + '</div>';
-      out += renderChart();
-      out += '<div class="notice" style="margin-top:10px"><b>口径</b>：每条线按该指标全期 min/max 归一化，<b>不同指标不可比</b>；方法/机构变化处已断开；「仅回顾，不解读」。</div>';
+      }).join('') + '</div>' + renderChart() +
+        '<div class="notice" style="margin-top:10px"><b>口径</b>：每条线按该指标全期 min/max 归一化，<b>不同指标不可比</b>；方法/机构变化处已断开；「仅回顾，不解读」。</div></div>';
+      out += '<div class="chart-layout">' + rail + main + '</div>';
     } else if (sub === 'ch-event') {
       var evs = filterEvents();
       if (!evs.length) {
@@ -843,39 +915,210 @@
     return out;
   };
 
-  /* —— 临床研究（35 号四段链路） —— */
+  function selColor(code) {
+    var i = ['esr', 'crp', 'wbc', 'hb', 'plt', 'alt', 'creat'].indexOf(code);
+    return ['var(--brand)', 'var(--teal)', 'var(--plum)', 'var(--amber)', 'var(--action)', 'var(--muted)', 'var(--brand-deep)'][i] || 'var(--brand)';
+  }
+
+  /* —— 临床研究（35 号四段链路：建档→检索→匹配→呈现/收藏）—— */
   VIEWS.trials = function () {
     var sub = state.sub || 'tr-facts';
     var out = head('临床研究', SUBTITLES.trials);
     out += subnav('trials', sub);
     if (sub === 'tr-facts') {
       var p = P();
-      out += '<div class="card"><h3>建档</h3><ul>' +
+      var map = pointsByCode();
+      var esr = (map.esr || []).slice(-1)[0];
+      var cats = {};
+      (p.meds || []).forEach(function (m) { cats[m.cat] = 1; });
+      out += '<div class="notice"><b>四段链路 ① 建档</b>：只有<b>已确认入库</b>的字段参与匹配；待核对候选不参与（候选核对去「检查与指标 → 待核对候选」）。</div>';
+      out += '<div class="grid2" style="margin-top:10px"><div class="card"><h3>档案字段（已入库）</h3><ul>' +
         '<li>诊断：大动脉炎（TAK）——以医生书面结论为准</li>' +
-        '<li>重要病史与用药：见「用药与减量」（' + (p.meds || []).length + ' 条记录）</li>' +
-        '<li>最近指标：见「检查与指标」</li>' +
-        '</ul><p class="k">这页给检索通道提供事实底座；不自动判断你是否符合任何试验条件。</p></div>';
+        '<li>性别 / 年龄：' + esc(p.sex || '女') + ' / ' + esc(p.age) + ' 岁</li>' +
+        '<li>治疗经验类别：' + esc(Object.keys(cats).join('、') || '未记录') + '</li>' +
+        '<li>最近化验：' + (esr ? 'ESR ' + esc(esr.value) + '（' + esc(esr.date) + '）' : '未记录') + '</li>' +
+        '<li>所在城市：<b>未登记</b>——匹配里这项会标「待确认」，不会瞎猜</li>' +
+        '</ul><p class="k">这页给检索与匹配提供事实底座；不自动判断你是否符合任何试验条件。</p></div>' +
+        '<div class="card"><h3>候选池口径（写在卡头）</h3>' +
+        '<p class="k">· 原型内置 <b>2 条示例条目</b>（虚构，不是真实研究，不含可用登记号）；开发版走 research/takayasu 快照 <b>104 条</b>（2026-11-05）。</p>' +
+        '<p class="k">· 已载 2 / 快照 104 ——<b>不是全库扫描</b>，检索词命中才进池。</p>' +
+        '<p class="k">· 登记状态一律「未核实」；快照会过期，以官方登记页为准。</p></div></div>';
     } else if (sub === 'tr-search') {
-      out += '<div class="notice"><b>双通道检索</b>：本原型内置真实登记摘录（ClinicalTrials.gov 公开页摘录，检索日期 2026-11-05）；真实在线检索在开发版接入。</div>';
-      out += trialsTable();
+      out += '<div class="notice"><b>四段链路 ② 检索</b>：我要找某个药 / 编号 / 方向——按你选的条件排，<b>不掺分数</b>。示例条目为虚构（不含可用登记号）；开发版走真实快照。</div>';
+      out += '<div class="card" style="margin-top:10px"><div class="form">' +
+        '<label>关键词（药名 / 编号 / 方向）<input id="tr-kw" placeholder="如：托珠单抗、NCT 编号、免疫治疗" inputmode="search"></label>' +
+        '<div class="grid3">' +
+        '<label>状态<select id="tr-status"><option value="">全部</option><option>招募中</option><option>已完结</option></select></label>' +
+        '<label>阶段<select id="tr-phase"><option value="">全部</option><option>观察性</option><option>II 期</option></select></label>' +
+        '<label>地区<select id="tr-region"><option value="">全部</option><option value="cn">含中国中心</option><option value="other">其他地区</option></select></label>' +
+        '</div><div class="row"><button class="primary" data-action="tr-search-run">检索</button>' +
+        '<span class="k">检索不产生匹配分数，只按条件过滤。</span></div></div></div>';
+      out += '<div id="tr-search-out" style="margin-top:10px">' + trialSearchRows('', '', '', '') + '</div>';
     } else {
-      out += '<div class="notice"><b>候选线索</b>：收藏后逐条核对；不提供打分排序，是否适合要和医生商量。</div>';
-      out += '<div class="empty"><div class="big">暂无收藏线索</div><p>在检索结果里点「收藏为线索」。</p><button class="primary" data-action="go" data-view="trials" data-sub="tr-search">去检索</button></div>';
+      var p2 = P();
+      var pref = state.trialPref || { china: true, recruiting: true };
+      var matches = matchTrials(p2);
+      out += '<div class="notice"><b>四段链路 ③ 匹配</b>：「我这份档案，哪些登记能对上？」——分层规则 + 逐条证据链；百分数只在展示层算，<b>不入库、不写判读列</b>；这是<b>登记字段符合度，不是入组资格</b>。</div>';
+      out += '<div class="row" style="margin:10px 0"><span class="pill">偏好（只影响排序）</span>' +
+        '<button class="ghost" data-action="tr-pref" data-k="china" aria-pressed="' + !!pref.china + '">优先含中国中心</button>' +
+        '<button class="ghost" data-action="tr-pref" data-k="recruiting" aria-pressed="' + !!pref.recruiting + '">优先招募中</button></div>';
+      var saved = state.savedTrials || {};
+      var savedKeys = Object.keys(saved);
+      out += '<div class="section-title"><h2>候选线索</h2><p>收藏后逐条核对；可拒收零副作用。收藏只存本机 {试验, 日期, 状态}。</p></div>';
+      out += '<div class="metric-grid">' + matches.list.map(trialMatchCard).join('') + '</div>';
+      out += '<div class="section-title"><h2>收藏与跟踪（' + savedKeys.length + '）</h2><p>在跟 / 准备问 / 已归档；快照没有登记状态变化时间线——<b>没有就是没有，不画假进度条</b>。</p></div>';
+      if (!savedKeys.length) {
+        out += '<div class="empty"><div class="big">还没有收藏</div><p>在匹配卡上点「收藏为线索」。</p></div>';
+      } else {
+        out += '<div class="table-wrap"><table><thead><tr><th>研究</th><th>收藏日期</th><th>状态</th><th>操作</th></tr></thead><tbody>' +
+          savedKeys.map(function (k) {
+            var it = saved[k];
+            return '<tr><td>' + esc(it.title) + '</td><td class="date">' + esc(it.savedOn) + '</td>' +
+              '<td><span class="pill ' + (it.state === 'tracking' ? 'green' : it.state === 'toAsk' ? 'yellow' : '') + '">' + esc(stateLabel(it.state)) + '</span></td>' +
+              '<td>' + ['tracking', 'toAsk', 'archived'].map(function (st) {
+                return '<button class="ghost" data-action="tr-state" data-k="' + esc(k) + '" data-st="' + st + '"' + (it.state === st ? ' disabled' : '') + '>' + stateLabel(st) + '</button>';
+              }).join(' ') + '</td></tr>';
+          }).join('') + '</tbody></table></div>';
+      }
+      out += '<div class="row" style="margin-top:10px">' + aiBtn() + '</div>';
     }
     return out;
   };
-  function trialsTable() {
-    var rows = [
-      { id: 'NCT-示例-1', title: '大血管炎免疫治疗观察性研究（登记摘录）', phase: '观察性', status: '招募中（摘录）', place: '多中心（含中国中心）' },
-      { id: 'NCT-示例-2', title: '大动脉炎生物制剂 II 期研究（登记摘录）', phase: 'II 期', status: '已完结（摘录）', place: '美国' }
-    ];
-    return '<div class="table-wrap"><span class="scroll-hint">左右滑动</span><table><thead><tr><th>登记号</th><th>研究</th><th>阶段</th><th>状态</th><th>地区</th><th>操作</th></tr></thead><tbody>' +
+
+  function stateLabel(st) { return { tracking: '在跟', toAsk: '准备问', archived: '已归档' }[st] || st; }
+
+  function trialSearchRows(kw, status, phase, region) {
+    var rows = TRIAL_POOL().filter(function (r) {
+      if (kw && (r.title + ' ' + r.id).toLowerCase().indexOf(kw.toLowerCase()) < 0) return false;
+      if (status && r.status.indexOf(status) < 0) return false;
+      if (phase && r.phase !== phase) return false;
+      if (region === 'cn' && !r.inChina) return false;
+      if (region === 'other' && r.inChina) return false;
+      return true;
+    });
+    if (!rows.length) {
+      return '<div class="empty"><div class="big">没有命中候选池里的条目</div><p>候选池只有 ' + TRIAL_POOL().length + ' 条示例（虚构）；开发版走 research 快照 104 条。</p></div>';
+    }
+    return '<div class="table-wrap"><span class="scroll-hint">左右滑动</span><table><thead><tr><th>登记号</th><th>研究</th><th>阶段</th><th>状态</th><th>地区</th><th>申办方</th><th>操作</th></tr></thead><tbody>' +
       rows.map(function (r) {
-        return '<tr><td>' + esc(r.id) + '</td><td>' + esc(r.title) + '</td><td>' + esc(r.phase) + '</td><td>' + esc(r.status) + '</td><td>' + esc(r.place) + '</td>' +
-          '<td><button class="ghost" data-action="fav-trial" data-id="' + esc(r.id) + '">收藏为线索</button></td></tr>';
+        return '<tr><td>' + esc(r.id) + '</td><td>' + esc(r.title) + '</td><td>' + esc(r.phase) + '</td><td>' + esc(r.status) + '</td><td>' + esc(r.place) + '</td><td>' + esc(r.sponsor) + '</td>' +
+          '<td><button class="ghost" data-action="tr-detail" data-id="' + esc(r.id) + '">看判据</button> <button class="ghost" data-action="tr-save" data-id="' + esc(r.id) + '">收藏</button></td></tr>';
       }).join('') + '</tbody></table></div>' +
-      '<p class="k">登记摘录≠推荐；入组条件请以 ClinicalTrials.gov 原页与医生意见为准。</p>';
+      '<p class="k">登记摘录≠推荐；入组条件请以官方登记页与医生意见为准（状态未核实）。</p>';
   }
+
+  function TRIAL_POOL() {
+    return [
+      { id: 'NCT-示例-1', title: '大血管炎免疫治疗观察性研究（登记摘录）', phase: '观察性', status: '招募中（摘录）', place: '多中心（含中国中心）', sponsor: '示例申办方（虚构）', kind: '观察性研究', inChina: true, recruiting: true },
+      { id: 'NCT-示例-2', title: '大动脉炎生物制剂 II 期研究（登记摘录）', phase: 'II 期', status: '已完结（摘录）', place: '美国', sponsor: '示例申办方（虚构）', kind: '干预性研究', inChina: false, recruiting: false }
+    ];
+  }
+
+  /* 匹配引擎（展示层）：判据只来自快照真实存在的字段；药物靶点不进分母；三态证据链 */
+  function matchTrials(p) {
+    var map = pointsByCode();
+    var esr = (map.esr || []).slice(-1)[0];
+    var cats = {};
+    (p.meds || []).forEach(function (m) { cats[m.cat] = 1; });
+    var pool = TRIAL_POOL();
+    var pref = state.trialPref || {};
+    var list = pool.map(function (r) {
+      var evidence = [
+        { cat: 'status', hard: true, cond: '登记状态为招募中（才方便咨询入组细节）', record: r.status,
+          profile: '无需档案值——只看登记侧', state: r.recruiting ? 'ok' : 'no', srcNote: '登记摘录（状态未核实）' },
+        { cat: 'location', hard: false, cond: '研究中心地区可及', record: r.place,
+          profile: '所在城市未登记', state: 'unknown', srcNote: '条目无法结构化，需人工核对（登记号 ' + r.id + '）' },
+        { cat: 'type', hard: false, cond: '研究类型与你愿意了解的方向一致', record: r.kind,
+          profile: '治疗经验：' + (Object.keys(cats).join('、') || '未记录') + '（已入库字段）',
+          state: r.kind === '观察性研究' ? 'ok' : 'unknown', srcNote: '干预性研究是否考虑新药，需与医生确认' },
+      ];
+      var n = evidence.filter(function (e) { return e.state === 'ok'; }).length;
+      var k = evidence.filter(function (e) { return e.state === 'unknown'; }).length;
+      var m = evidence.length;
+      var pct = n / m;
+      var band = pct >= 0.6 ? '字段都对得上' : '部分对得上';
+      return { r: r, evidence: evidence, n: n, k: k, m: m, pct: pct, band: band };
+    });
+    list.sort(function (a, b) {
+      var sa = (pref.recruiting ? (a.r.recruiting ? 1 : 0) : 0) + (pref.china ? (a.r.inChina ? 1 : 0) : 0);
+      var sb = (pref.recruiting ? (b.r.recruiting ? 1 : 0) : 0) + (pref.china ? (b.r.inChina ? 1 : 0) : 0);
+      if (sa !== sb) return sb - sa;
+      return b.pct - a.pct;
+    });
+    return { list: list };
+  }
+
+  function trialMatchCard(mr) {
+    var pct = Math.round(mr.pct * 100);
+    return '<button class="card trial-card" data-action="tr-detail" data-id="' + esc(mr.r.id) + '" style="text-align:left;cursor:pointer">' +
+      '<span class="tc-score"><b class="tc-pct num">' + pct + '%</b><span class="k">登记字段符合度</span>' +
+      '<span class="tc-nm num">' + mr.n + ' / ' + mr.m + ' 项对得上 · ' + mr.k + ' 项待确认</span>' +
+      '<span class="pill brand">' + esc(mr.band) + '</span>' +
+      '<span class="k">不是入组资格判断</span></span>' +
+      '<span class="tc-main"><b>' + esc(mr.r.title) + '</b>' +
+      '<span class="k">' + esc(mr.r.id) + ' · ' + esc(mr.r.phase) + ' · ' + esc(mr.r.status) + ' · ' + esc(mr.r.sponsor) + ' · ' + esc(mr.r.place) + '</span></span>' +
+      '<span class="tc-tags"><span class="pill ' + (mr.r.recruiting ? 'green' : '') + '">' + (mr.r.recruiting ? '招募中' : '非招募') + '</span>' +
+      '<span class="pill ' + (mr.r.inChina ? 'green' : '') + '">' + (mr.r.inChina ? '含中国中心' : '其他地区') + '</span></span>' +
+      '</button>';
+  }
+
+  /* E5：右侧浮窗（不是居中弹窗）：遮罩 / ✕ / Esc 三个关闭口；焦点回触发卡；不改 hash */
+  var trialPanel = null;
+  function openTrialDetail(id, trigger) {
+    closeTrialPanel();
+    var mr = matchTrials(P()).list.filter(function (x) { return x.r.id === id; })[0];
+    if (!mr) return;
+    trialPanel = document.createElement('div');
+    trialPanel.className = 'tp-shade';
+    var pct = Math.round(mr.pct * 100);
+    var evRows = mr.evidence.map(function (e) {
+      var cls = e.state === 'ok' ? 'ok' : e.state === 'no' ? 'no' : 'unknown';
+      var mark = e.state === 'ok' ? '✓ 符合' : e.state === 'no' ? '✕ 不符合' : '? 待确认';
+      return '<div class="ev-row"><span class="pill ' + cls + '">' + mark + '</span> <b>' + esc(e.cond) + '</b>' +
+        (e.hard ? ' <span class="pill red">硬性条件</span>' : '') +
+        '<div class="k">记录里是：' + esc(e.record) + '（' + esc(e.srcNote) + '）· 条件要求：' + esc(e.cond) + '</div>' +
+        '<div class="k">档案侧：' + esc(e.profile) + '</div></div>';
+    }).join('');
+    var order = ['no', 'unknown', 'ok'];
+    var sorted = mr.evidence.slice().sort(function (a, b) { return order.indexOf(a.state) - order.indexOf(b.state); });
+    trialPanel.innerHTML = '<div class="tp-panel" role="dialog" aria-modal="true" aria-label="试验判据详情">' +
+      '<div class="tp-head"><b>' + esc(mr.r.title) + '</b><span class="spacer"></span>' +
+      '<button class="icon-button" data-tp="close" aria-label="关闭判据详情">×</button></div>' +
+      '<div class="tp-body">' +
+      '<div class="card"><span class="tc-pct num">' + pct + '%</span> <b>登记字段符合度（' + esc(mr.band) + '）</b>' +
+      '<div class="k num">' + mr.n + ' / ' + mr.m + ' 项对得上 · ' + mr.k + ' 项待确认 · 不是入组资格判断 · 状态未核实（快照 2026-11-05，以官方登记页为准）</div></div>' +
+      '<div class="section-title"><h3>判据逐条（先不符合与待确认，其余折叠）</h3></div>' +
+      sorted.map(function (e) {
+        var cls = e.state === 'ok' ? 'ok' : e.state === 'no' ? 'no' : 'unknown';
+        var mark = e.state === 'ok' ? '✓ 符合' : e.state === 'no' ? '✕ 不符合' : '? 待确认';
+        var row = '<div class="ev-row"><span class="pill ' + cls + '">' + mark + '</span> <b>' + esc(e.cond) + '</b>' +
+          (e.hard ? ' <span class="pill red">硬性条件</span>' : '') +
+          '<div class="k">记录里是：' + esc(e.record) + '（' + esc(e.srcNote) + '）· 条件要求：' + esc(e.cond) + '</div>' +
+          '<div class="k">档案侧：' + esc(e.profile) + '</div></div>';
+        return e.state === 'ok' ? '<details class="phase-fold"><summary>' + mark + ' · ' + esc(e.cat) + '</summary><div class="fold-body">' + row + '</div></details>' : row;
+      }).join('') +
+      '<details class="phase-fold"><summary>✓ 符合的判据（折叠）</summary><div class="fold-body">' +
+      mr.evidence.filter(function (e) { return e.state === 'ok'; }).map(function (e) {
+        return '<div class="ev-row"><span class="pill ok">✓ 符合</span> <b>' + esc(e.cond) + '</b><div class="k">记录里是：' + esc(e.record) + ' · 档案侧：' + esc(e.profile) + '</div></div>';
+      }).join('') + '</div></details>' +
+      '<div class="section-title"><h3>档案字段（已确认入库）</h3></div><div class="card k">诊断：大动脉炎（医生书面结论）· 性别/年龄见档案 · 治疗经验类别见「用药与减量」· 所在城市未登记（待确认项的来源）</div>' +
+      '<div class="section-title"><h3>登记字段（快照）</h3></div><div class="card k">' + esc(mr.r.id) + ' · ' + esc(mr.r.phase) + ' · ' + esc(mr.r.status) + ' · 申办方 ' + esc(mr.r.sponsor) + ' · 地区 ' + esc(mr.r.place) + '</div>' +
+      '<div class="notice warn"><b>入排原文缺失声明</b>：本机快照只存登记的结构化字段，入排标准请到官方登记页核对。</div>' +
+      '<div class="row"><a class="ghost" href="https://clinicaltrials.gov" target="_blank" rel="noopener">官方登记页出口 ↗</a>' +
+      '<button class="primary" data-action="tr-save" data-id="' + esc(mr.r.id) + '">收藏为线索</button></div>' +
+      '</div></div>';
+    document.body.appendChild(trialPanel);
+    trialPanel.addEventListener('click', function (e) { if (e.target === trialPanel) closeTrialPanel(); });
+    trialPanel.querySelector('[data-tp="close"]').addEventListener('click', closeTrialPanel);
+    state._trialReturnFocus = trigger || document.activeElement;
+  }
+  function closeTrialPanel() {
+    if (trialPanel) { trialPanel.remove(); trialPanel = null; }
+    if (state._trialReturnFocus && state._trialReturnFocus.focus) { try { state._trialReturnFocus.focus(); } catch (e) {} }
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && trialPanel) closeTrialPanel();
+  });
 
   /* —— 资料库 —— */
   VIEWS.docs = function () {
@@ -885,7 +1128,7 @@
     out += subnav('docs', sub);
     if (sub === 'docs-lib') {
       out += docsTable(p.docs);
-      out += '<div class="notice" style="margin-top:10px">导入 → 解析（MinerU 桩：开发版接入）→ 候选 → 核对 → 入库；解析失败保留原件，可手工录入。</div>';
+      out += '<div class="row" style="margin-top:10px"><button class="primary" data-action="form-doc">登记一份资料</button><span class="k">导入 → 解析（MinerU 桩：开发版接入）→ 候选 → 核对 → 入库。</span></div>';
     } else if (sub === 'docs-cand') {
       out += candidatesSection();
     } else {
@@ -940,6 +1183,108 @@
 
   function pageIcon(k) {
     return { home: '⌂', dx: '❖', vessel: '⌇', report: '≣', pill: '℞', calendar: '▦', flower: '❀', leaf: '☘', heart: '♥', chart: '∿', flask: '⚗', folder: '▤' }[k] || '•';
+  }
+
+  /* ---------- 录入窗（F 组）：≤6 字段 + 数字键盘 + 三态按钮 ---------- */
+  function openForm(cfg) {
+    var fields = cfg.fields || [];
+    var bodyHtml = '<div class="form">' + fields.map(function (f, i) {
+      var inp;
+      if (f.type === 'select') {
+        inp = '<select id="ff-' + i + '"' + (f.disabled ? ' disabled' : '') + '>' + (f.options || []).map(function (o) {
+          return '<option' + (o === f.value ? ' selected' : '') + '>' + esc(o) + '</option>';
+        }).join('') + '</select>';
+      } else if (f.type === 'textarea') {
+        inp = '<textarea id="ff-' + i + '" placeholder="' + esc(f.placeholder || '') + '">' + esc(f.value || '') + '</textarea>';
+      } else {
+        inp = '<input id="ff-' + i + '" type="' + (f.type === 'num' ? 'number' : 'text') + '" inputmode="' + (f.inputmode || (f.type === 'num' ? 'decimal' : 'text')) + '" value="' + esc(f.value || '') + '" placeholder="' + esc(f.placeholder || '') + '">';
+      }
+      return '<label>' + esc(f.label) + (f.required ? ' <span class="pill red">必填</span>' : '') + inp + '</label>' +
+        (f.hint ? '<p class="hint">' + esc(f.hint) + '</p>' : '');
+    }).join('') + '</div><p class="hint" id="ff-err" style="color:var(--danger)"></p>';
+    dialog(cfg.title, bodyHtml,
+      '<button class="ghost" data-action="form-cancel">取消</button>' +
+      '<button class="ghost" data-action="form-save" data-mode="close">保存并关闭</button>' +
+      '<button class="primary" data-action="form-save" data-mode="continue">保存并继续录入</button>');
+    state._form = cfg;
+  }
+  function formValues() {
+    var cfg = state._form;
+    var vals = {};
+    (cfg.fields || []).forEach(function (f, i) {
+      var el = $('#ff-' + i);
+      vals[f.key] = el ? el.value.trim() : '';
+    });
+    return vals;
+  }
+  function formSave(mode) {
+    var cfg = state._form;
+    var vals = formValues();
+    for (var f of (cfg.fields || [])) {
+      if (f.required && !String(vals[f.key] || '')) {
+        $('#ff-err').textContent = '必填项「' + f.label + '」还没有填。';
+        return;
+      }
+    }
+    cfg.onSave(vals);
+    if (mode === 'continue') {
+      $('#ff-err').textContent = '';
+      (cfg.fields || []).forEach(function (f, i) {
+        if (f.keep) return;
+        var el = $('#ff-' + i);
+        if (el && el.tagName !== 'SELECT') el.value = '';
+      });
+      toast('已记录（演示，内存内）——可以继续录下一条');
+      state._form.keepValues = true;
+    } else {
+      closeDialog();
+      toast('已记录（演示，内存内；刷新后保留在本会话）');
+    }
+  }
+
+  /* F6：医院多卡（含修改=新增版本 F5 + 查看历史） */
+  function hospitalsSection(p) {
+    var hs = p.hospitals || [];
+    var out = '<div class="section-title"><h2>就医信息（' + hs.length + ' 家）</h2><p>多家医院逐条卡；修改 = 新增一个版本，旧版本可查（不覆盖）。</p></div>';
+    if (!hs.length) {
+      out += '<div class="empty"><div class="big">还没有医院信息</div><p>把常去的医院记下来，复诊准备页会带上。</p><button class="primary" data-action="hospital-add">添加医院</button></div>';
+      return out;
+    }
+    out += '<div class="bp-grid">' + hs.map(function (h) {
+      return '<div class="card"><div class="row"><b>' + esc(h.name) + '</b><span class="pill">版本 v' + esc(h.revision || 1) + '</span></div>' +
+        '<p class="k">' + esc(h.dept || '科室未填') + '</p>' +
+        '<p class="k">' + (h.contactKind === 'phone' ? '☎ ' : '出处：') + esc(h.contactText || '未填') + '</p>' +
+        '<div class="row"><button class="ghost" data-action="hospital-edit" data-id="' + h.id + '">修改（新版本）</button>' +
+        '<button class="ghost" data-action="hospital-history" data-id="' + h.id + '">查看历史</button></div></div>';
+    }).join('') + '</div>';
+    out += '<div class="row" style="margin-top:10px"><button class="primary" data-action="hospital-add">添加医院</button></div>';
+    return out;
+  }
+  function hospitalForm(existing) {
+    openForm({
+      title: existing ? '修改医院（将生成新版本 v' + ((existing.revision || 1) + 1) + '）' : '添加医院',
+      fields: [
+        { key: 'name', label: '医院名称', required: true, value: existing ? existing.name : '' },
+        { key: 'dept', label: '科室', value: existing ? existing.dept : '' },
+        { key: 'kind', label: '联系方式类型', type: 'select', options: ['phone', 'quote'], value: existing ? existing.contactKind : 'phone' },
+        { key: 'contact', label: '电话或出处引用', value: existing ? existing.contactText : '', hint: '电话直接填号码；不想存号码就填「出处：某日门诊病历」' }
+      ],
+      onSave: function (v) {
+        var p = P();
+        if (existing) {
+          var old = JSON.parse(JSON.stringify(existing));
+          old.in_use = 0;
+          (p._hospitalHistory = p._hospitalHistory || {})[existing.name] = (p._hospitalHistory[existing.name] || []).concat([old]);
+          existing.name = v.name; existing.dept = v.dept;
+          existing.contactKind = v.kind === 'phone' ? 'phone' : 'quote';
+          existing.contactText = v.contact;
+          existing.revision = (existing.revision || 1) + 1;
+        } else {
+          (p.hospitals = p.hospitals || []).push({ id: Date.now(), name: v.name, dept: v.dept, contactKind: v.kind === 'phone' ? 'phone' : 'quote', contactText: v.contact, revision: 1 });
+        }
+        render();
+      }
+    });
   }
 
   /* ---------- 整页视图（32 号） ---------- */
@@ -1008,13 +1353,62 @@
 
   function settingsDialog() {
     dialog('设置',
-      '<div class="form">' +
-      '<label>资料目录<input value="（演示）未连接宿主" readonly></label>' +
-      '<p class="hint">开发版接入后：目录由 DSH Desktop 授权，本原型不读写真实文件。</p>' +
-      '<label>文档解析（MinerU）<select disabled><option>未接入（接口契约已备）</option></select></label>' +
-      '<label>临床数据库<select disabled><option>在线四通道（开发版接入）</option></select></label>' +
-      '<label>AI<select disabled><option>未接通：演示面板不会发送任何内容</option></select></label>' +
-      '</div>');
+      '<div class="tabs" role="tablist" aria-label="设置分区">' +
+      '<button role="tab" class="tab" data-action="cfg-tab" data-tab="store" aria-selected="true">工作区</button>' +
+      '<button role="tab" class="tab" data-action="cfg-tab" data-tab="parse" aria-selected="false">文档解析（MinerU）</button>' +
+      '<button role="tab" class="tab" data-action="cfg-tab" data-tab="clinic" aria-selected="false">临床数据库</button>' +
+      '</div><div id="cfg-body"></div>');
+    renderCfgTab(state.cfgTab || 'store');
+  }
+  function renderCfgTab(tab) {
+    state.cfgTab = tab;
+    $$('#dialog .tabs .tab').forEach(function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === tab)); });
+    var body = $('#cfg-body');
+    if (tab === 'store') {
+      body.innerHTML =
+        '<div class="form">' +
+        '<label>业务资料根目录<input value="（演示）未连接宿主" readonly></label>' +
+        '<p class="hint">开发版接入后：目录由 DSH Desktop 授权，本原型不读写真实文件。资料目录<b>拒绝主目录 / 桌面 / 下载根 / tmp</b>（dev-server 与宿主同口径）。</p>' +
+        '<div class="grid3">' +
+        '<div class="card"><div class="k">原件</div><div class="tile-v">12.4 MB</div><div class="k">示意值 · 开发版实算</div></div>' +
+        '<div class="card"><div class="k">派生</div><div class="tile-v">1.1 MB</div><div class="k">示意值 · 开发版实算</div></div>' +
+        '<div class="card"><div class="k">数据库</div><div class="tile-v">380 KB</div><div class="k">示意值 · 开发版实算</div></div>' +
+        '</div>' +
+        '<div class="row"><span class="pill">备份与恢复</span><span class="k">上次备份：暂无（开发版接入后每日本地备份）</span>' +
+        '<button class="ghost" data-action="noop">立即备份（原型未实现）</button></div>' +
+        '</div>';
+    } else if (tab === 'parse') {
+      body.innerHTML =
+        '<div class="notice warn">本仓未接入 MinerU：<b>勾选与保存都不会联网</b>，真实解析在开发版配置 Token 后启用。</div>' +
+        '<label class="row" style="margin-top:10px"><input type="checkbox" id="mu-consent"> 我了解：所选文件会上传到 MinerU 云端解析。只传文件本身，不传档案、化验结论、治疗记录；可随时关闭。</label>' +
+        '<p class="hint" id="mu-consent-note" style="color:var(--warn)">未勾选前不会上传，也不会调用 MinerU。</p>' +
+        '<label>MinerU API Token（掩码只显示末 4 位）<input id="mu-token" placeholder="粘贴 Token（未勾选同意时禁用）" disabled></label>' +
+        '<p class="hint">当前值：<code id="mu-mask">未设置</code> · <span class="k">掩码派生自真实值，只显示末 4 位。</span></p>' +
+        '<div class="row"><button class="ghost" data-action="mu-apply">保存 Token（本地 .secrets，不联网）</button>' +
+        '<button class="ghost" data-action="mu-show">显示/隐藏掩码</button></div>' +
+        '<details class="phase-fold" style="margin-top:10px"><summary>如何申请 Token（4 步）</summary><div class="fold-body"><ol>' +
+        '<li>打开 <a href="https://mineru.net/apiManage/token" target="_blank" rel="noopener">mineru.net/apiManage/token</a>（申请 / 重置都在这页）。</li>' +
+        '<li>注册并登录后，创建一个 API Token。</li>' +
+        '<li>复制 Token 回本页粘贴并保存（保存到本机 .secrets，已加入 git 忽略）。</li>' +
+        '<li>回到「文档解析」勾选同意后即可解析；不用了可在同一页重置。</li>' +
+        '</ol></div></details>' +
+        '<div class="card" style="margin-top:10px"><h3>解析说明</h3>' +
+        '<p class="k">· 解析模型 pipeline 固定，不提供 VLM 切换——版本可复现、出错可追责。</p>' +
+        '<p class="k">· Flash 免费额度上限 10 MB / 20 页；超限自动降级为本地纯文本抽取，解析质量提示会出现在候选页。</p>' +
+        '<p class="k">· TXT / MD / CSV 始终先走本地抽取，不上传。</p></div>';
+    } else {
+      body.innerHTML =
+        '<div class="row"><span class="pill green">快照可用</span><b>104 条</b><span class="k">快照日期 2026-11-05 · unified-trial-mcp 采集 · 快照会过期，使用时以官方登记页为准</span></div>' +
+        '<p class="hint">临床研究页与本 tab 使用同一份快照（E10 联动口径）；登记状态一律「未核实」。</p>' +
+        '<div class="table-wrap"><table><thead><tr><th>通道</th><th>终态</th><th>次数</th><th>含义</th></tr></thead><tbody>' +
+        '<tr><td>ictrp</td><td><span class="pill green">SUCCESS ×2</span> <span class="pill red">FAILED ×3</span></td><td>5</td><td>成功 2 次检索共 103 条；3 次失败如实记 FAILED，不算「查过」</td></tr>' +
+        '<tr><td>chinadrugtrials</td><td><span class="pill green">SUCCESS ×1</span> <span class="pill">NO_RESULTS ×4</span></td><td>5</td><td>中文标准名命中 1 条</td></tr>' +
+        '<tr><td>chictr_online</td><td><span class="pill red">FAILED ×5</span></td><td>5</td><td>服务失败——不能写成「无在研试验」</td></tr>' +
+        '<tr><td>chictr_pancreatic_archive</td><td><span class="pill yellow">NEEDS_SETUP ×5</span></td><td>5</td><td>离线语料仅胰腺癌覆盖，TAK 无覆盖，如实声明</td></tr>' +
+        '<tr><td>ctv / xyb_chinadrugtrials_archive</td><td><span class="pill">NO_RESULTS ×10</span></td><td>10</td><td>查过、无命中</td></tr>' +
+        '</tbody></table></div>' +
+        '<div class="row" style="margin-top:10px"><span class="pill">断网空态</span><span class="k">断网时临床页只展示本地快照并标「快照模式」，不假装在线检索成功。</span></div>';
+    }
   }
 
   function aboutDialog() {
@@ -1297,8 +1691,202 @@
       case 'fav-trial':
         toast('已收藏为候选线索（候选 ≠ 匹配，无指数）');
         break;
+      case 'cfg-tab':
+        renderCfgTab(btn.getAttribute('data-tab'));
+        break;
+      case 'mu-apply': {
+        var consent = $('#mu-consent') && $('#mu-consent').checked;
+        var tok = $('#mu-token') ? $('#mu-token').value.trim() : '';
+        if (!consent) { $('#cfg-body .hint#mu-consent-note').textContent = '未勾选同意——不会保存，也不会上传（本仓未接入 MinerU，保存不联网）。'; return; }
+        if (!tok) { $('#ff-err') && ($('#ff-err').textContent = '' || toast('Token 为空，未保存')); toast('Token 为空，未保存'); return; }
+        state.cfg.muToken = tok;
+        var mk = $('#mu-mask'); if (mk) mk.textContent = maskToken(tok);
+        toast('已保存到本机 .secrets（不联网；本仓未接入 MinerU）');
+        break;
+      }
+      case 'mu-show': {
+        var ti = $('#mu-token');
+        if (ti && !ti.disabled) { ti.type = ti.type === 'password' ? 'text' : 'password'; }
+        break;
+      }
+      case 'sel-check': {
+        var c5 = btn.getAttribute('data-code');
+        var i5 = state.sel.indexOf(c5);
+        if (btn.checked) {
+          if (state.sel.length >= 4) { btn.checked = false; toast('最多同时画 4 条——先取消一条再选'); }
+          else { state.sel.push(c5); }
+        } else {
+          if (state.sel.length > 1) { state.sel.splice(i5, 1); }
+          else { btn.checked = true; toast('至少保留一条曲线'); }
+        }
+        render();
+        break;
+      }
+      case 'form-lab':
+        openForm({ title: '手工录入化验', fields: [
+          { key: 'code', label: '指标', type: 'select', options: ['esr', 'crp', 'wbc', 'hb', 'plt', 'alt', 'creat'], value: 'esr' },
+          { key: 'date', label: '日期', required: true, value: '2026-11-05' },
+          { key: 'value', label: '数值', type: 'num', required: true, placeholder: '如 26 或 2.1' },
+          { key: 'method', label: '方法', placeholder: '如 Westergren / 免疫比浊' },
+          { key: 'org', label: '机构', placeholder: '如 市人民医院' }
+        ], onSave: function (v) {
+          var p = P();
+          var m = (p.metrics = p.metrics || []).filter(function (x) { return x.code === v.code; })[0];
+          var pt = { date: v.date, value: Number(v.value), unit: (PROTO.metricDefs.filter(function (d) { return d.code === v.code; })[0] || {}).unit || '', method: v.method || '未登记方法', org: v.org || '未登记机构' };
+          if (m) m.points.push(pt); else p.metrics.push({ code: v.code, points: [pt] });
+          render();
+        } });
+        break;
+      case 'form-bp':
+        openForm({ title: '记一条血压', fields: [
+          { key: 'date', label: '日期', required: true, value: '2026-11-05' },
+          { key: 'lSys', label: '左臂收缩压', type: 'num', required: true, inputmode: 'numeric', placeholder: '如 118' },
+          { key: 'lDia', label: '左臂舒张压', type: 'num', required: true, inputmode: 'numeric', placeholder: '如 74' },
+          { key: 'rSys', label: '右臂收缩压', type: 'num', inputmode: 'numeric' },
+          { key: 'rDia', label: '右臂舒张压', type: 'num', inputmode: 'numeric' },
+          { key: 'note', label: '备注', placeholder: '如 右臂难量准，以左臂为准' }
+        ], onSave: function (v) {
+          var p = P();
+          (p.bpRecords = p.bpRecords || []).push({ id: Date.now(), date: v.date, place: '家中自测',
+            armL: { sys: Number(v.lSys), dia: Number(v.lDia) },
+            armR: v.rSys ? { sys: Number(v.rSys), dia: Number(v.rDia || 0) } : null,
+            ankleL: null, ankleR: null, note: v.note || null });
+          render();
+        } });
+        break;
+      case 'form-med':
+        openForm({ title: '记一次调药', fields: [
+          { key: 'date', label: '日期', required: true, value: '2026-11-05' },
+          { key: 'drug', label: '药名', required: true, type: 'select', options: ['泼尼松', '甲泼尼龙', '吗替麦考酚酯', '环磷酰胺', '其他（写在医生原话里）'] },
+          { key: 'dose', label: '剂量 mg', type: 'num', inputmode: 'numeric' },
+          { key: 'cat', label: '类别', type: 'select', options: ['糖皮质激素', '免疫抑制剂', '生物制剂'] },
+          { key: 'note', label: '医生原话（照抄）', type: 'textarea', placeholder: '逐字抄，不改写' }
+        ], onSave: function (v) {
+          (P().meds = P().meds || []).push({ id: Date.now(), date: v.date, drug: v.drug, doseMg: v.dose ? Number(v.dose) : null, perDay: true, cat: v.cat, note: v.note || null, source: '本人录入' });
+          render();
+        } });
+        break;
+      case 'form-event':
+        openForm({ title: '记一次就诊', fields: [
+          { key: 'date', label: '日期', required: true, value: '2026-11-05' },
+          { key: 'text', label: '事件描述', required: true, type: 'textarea', placeholder: '如 首次随访：抽血 + 四肢血压' },
+          { key: 'src', label: '来源', placeholder: '如 随访记录 / 门诊病历' }
+        ], onSave: function (v) {
+          (P().events = P().events || []).push({ date: v.date, type: '就诊', text: v.text, source: v.src || '本人记录' });
+          render();
+        } });
+        break;
+      case 'form-pregq':
+        openForm({ title: '加一条孕前问题', fields: [
+          { key: 'text', label: '问题', required: true, type: 'textarea', placeholder: '想问风湿科医生的问题（只列问题）' }
+        ], onSave: function (v) {
+          (P().pregList = P().pregList || []).push({ id: Date.now(), text: v.text, verified: false, asked: null });
+          render();
+        } });
+        break;
+      case 'form-pregtrack':
+        openForm({ title: '记一条妊娠随访', fields: [
+          { key: 'date', label: '日期', required: true, value: '2026-11-05' },
+          { key: 'dept', label: '科别', type: 'select', options: ['产科', '风湿免疫科'] },
+          { key: 'text', label: '记录（原文）', required: true, type: 'textarea' }
+        ], onSave: function (v) {
+          (P().pregTrack = P().pregTrack || []).push({ date: v.date, type: v.dept, text: v.text, source: '本人记录' });
+          render();
+        } });
+        break;
+      case 'form-mind':
+        openForm({ title: '记一条感受（默认私密）', fields: [
+          { key: 'date', label: '日期', required: true, value: '2026-11-05' },
+          { key: 'text', label: '感受', required: true, type: 'textarea', placeholder: '写给自己，也只属于自己' }
+        ], onSave: function (v) {
+          (P().mindEntries = P().mindEntries || []).push({ id: Date.now(), date: v.date, text: v.text, private: true, source: '本人记录' });
+          render();
+        } });
+        break;
+      case 'form-life':
+        openForm({ title: '记一条日常', fields: [
+          { key: 'date', label: '日期', required: true, value: '2026-11-05' },
+          { key: 'text', label: '内容', required: true, type: 'textarea', placeholder: '用自己的话记' }
+        ], onSave: function (v) {
+          (P().lifeEntries = P().lifeEntries || []).push({ id: Date.now(), date: v.date, text: v.text, source: '本人记录' });
+          render();
+        } });
+        break;
+      case 'form-doc':
+        openForm({ title: '登记一份资料', fields: [
+          { key: 'name', label: '材料名称', required: true, placeholder: '如 2026-11-05 化验单' },
+          { key: 'date', label: '日期', required: true, value: '2026-11-05' },
+          { key: 'type', label: '类型', type: 'select', options: ['化验单', '影像报告', '门诊病历', '住院小结', '其他'] },
+          { key: 'origin', label: '来源方式', type: 'select', options: ['手工录入', '拍照导入', '扫描导入'] }
+        ], onSave: function (v) {
+          (P().docs = P().docs || []).push({ id: Date.now(), name: v.name, date: v.date, type: v.type, status: '草稿待核对', origin: v.origin, private: false });
+          render();
+        } });
+        break;
+      case 'hospital-add':
+        hospitalForm(null);
+        break;
+      case 'hospital-edit': {
+        var hid = Number(btn.getAttribute('data-id'));
+        var hh = (P().hospitals || []).filter(function (x) { return x.id === hid; })[0];
+        if (hh) hospitalForm(hh);
+        break;
+      }
+      case 'hospital-history': {
+        var hid2 = Number(btn.getAttribute('data-id'));
+        var cur = (P().hospitals || []).filter(function (x) { return x.id === hid2; })[0];
+        var hist = ((P()._hospitalHistory || {})[cur ? cur.name : ''] || []);
+        openPageView('医院版本历史（更正=新增版本，不覆盖）',
+          '<div class="card"><h3>' + esc(cur ? cur.name : '') + ' · 当前 v' + (cur ? cur.revision : '?') + '</h3>' +
+          (hist.length ? hist.map(function (h) { return '<p class="k">v' + h.revision + '：' + esc(h.name) + ' · ' + esc(h.dept || '') + ' · ' + esc(h.contactText || '') + '</p>'; }).join('') : '<p class="k">还没有更正历史——修改一次后这里会出现旧版本。</p>') + '</div>');
+        break;
+      }
+      case 'tr-search-run': {
+        var kw = $('#tr-kw') ? $('#tr-kw').value.trim() : '';
+        var st2 = $('#tr-status') ? $('#tr-status').value : '';
+        var ph = $('#tr-phase') ? $('#tr-phase').value : '';
+        var rg = $('#tr-region') ? $('#tr-region').value : '';
+        $('#tr-search-out').innerHTML = trialSearchRows(kw, st2, ph, rg);
+        break;
+      }
+      case 'tr-pref': {
+        state.trialPref = state.trialPref || { china: true, recruiting: true };
+        var k6 = btn.getAttribute('data-k');
+        state.trialPref[k6] = !state.trialPref[k6];
+        render();
+        break;
+      }
+      case 'tr-detail':
+        openTrialDetail(btn.getAttribute('data-id'), btn);
+        break;
+      case 'tr-save': {
+        var tid = btn.getAttribute('data-id');
+        state.savedTrials = state.savedTrials || {};
+        var rec = TRIAL_POOL().filter(function (r) { return r.id === tid; })[0];
+        if (rec && !state.savedTrials[tid]) {
+          state.savedTrials[tid] = { title: rec.title, savedOn: '2026-11-05', state: 'tracking' };
+          toast('已收藏为线索（本机 {试验, 日期, 状态}；拒收/取消零副作用）');
+        }
+        render();
+        if (trialPanel) openTrialDetail(tid, state._trialReturnFocus);
+        break;
+      }
+      case 'tr-state': {
+        var sk = btn.getAttribute('data-k');
+        if (state.savedTrials && state.savedTrials[sk] && !btn.disabled) {
+          state.savedTrials[sk].state = btn.getAttribute('data-st');
+          render();
+        }
+        break;
+      }
+      case 'form-cancel':
+        closeDialog();
+        break;
+      case 'form-save':
+        formSave(btn.getAttribute('data-mode'));
+        break;
       case 'noop':
-        toast('原型未实现录入：此按钮演示空态的下一步');
+        toast('原型未实现：此按钮演示空态的下一步（录入类按钮已陆续实现）');
         break;
       case 'close': closeDialog(); break;
     }

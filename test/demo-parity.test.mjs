@@ -5,7 +5,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { DatabaseSync } from 'node:sqlite'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -30,8 +30,10 @@ function loadDemo() {
 
 function bootFromDb() {
   const db = new DatabaseSync(':memory:')
-  db.exec(readFileSync(join(ROOT, 'schema/0001_initial.sql'), 'utf-8'))
-  db.exec(readFileSync(join(ROOT, 'schema/0002_demo_shape.sql'), 'utf-8'))
+  const dir = join(ROOT, 'schema')
+  for (const f of readdirSync(dir).filter((f) => /^\d{4}_.*\.sql$/.test(f)).sort()) {
+    db.exec(readFileSync(join(dir, f), 'utf-8'))
+  }
   return import(join(ROOT, 'dsh/readmodels.js')).then(async (rm) => {
     const demo = await import(join(ROOT, 'dsh/demo.js'))
     demo.seedDemoData(db)
@@ -64,8 +66,11 @@ test('parity: A/B 档案全部字段 canonical 一致（先证两边非空）', 
 
 test('parity: 空库与有库行为（播种幂等）', async () => {
   const db = new DatabaseSync(':memory:')
-  db.exec(readFileSync(join(ROOT, 'schema/0001_initial.sql'), 'utf-8'))
-  db.exec(readFileSync(join(ROOT, 'schema/0002_demo_shape.sql'), 'utf-8'))
+  const { readdirSync } = await import('node:fs')
+  const dir = join(ROOT, 'schema')
+  for (const f of readdirSync(dir).filter((f) => /^\d{4}_.*\.sql$/.test(f)).sort()) {
+    db.exec(readFileSync(join(dir, f), 'utf-8'))
+  }
   const demo = await import(join(ROOT, 'dsh/demo.js'))
   const r1 = demo.seedDemoData(db)
   const r2 = demo.seedDemoData(db)

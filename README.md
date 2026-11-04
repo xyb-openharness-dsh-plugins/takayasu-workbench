@@ -25,43 +25,54 @@
 
 只写已发生事实并带日期：2025-07 国家指南收载第 76 节；2024-02《中国大动脉炎诊疗指南(2023)》发表；2026-11-05 ClinicalTrials.gov API 实查 78 项注册/27 活跃/中国站点 25；2017-08 托珠单抗日本获批；2026-11-05 本工作台建立 v0.2.0 原型。
 
-## 关键功能（截图墙 · v0.2.0 原型实渲）
+## 关键功能（截图墙 · v0.3.0 原型实渲）
 
 ### 看板：确诊、血管、指标、血压、用药放在一页
-![看板](docs/screenshots/v0.2.0-dashboard-A.png)
+![看板](docs/screenshots/v0.3.0-dashboard-A.png)
 刚确诊的患者一进来就能看到「该看什么、缺什么」；全部数字来自同一份合成示例数据，标注"仅演示，未连接真实病历与宿主"。
 
 ### 检查与指标：194px 定高 3D 翻转卡
-![指标卡](docs/screenshots/v0.2.0-metric-cards-B.png)
+![指标卡](docs/screenshots/v0.3.0-metric-cards-B.png)
 正面是最近值/较上次差值/次数/来源（差值只写「较上次」，不暗示好坏）；不同方法/机构来源时同屏提示「不合并、不连线、解读归医生」。
-![翻转背面](docs/screenshots/v0.2.0-metric-card-flipped-B.png)
+![翻转背面](docs/screenshots/v0.3.0-metric-card-flipped-B.png)
 背面是最近 8 次折线与时间范围；单点序列不连线，只有 1 次记录会明说。
 
 ### 受累血管图谱：报告原文按节段留版本
-![受累血管](docs/screenshots/v0.2.0-vessel-map-B.png)
+![受累血管](docs/screenshots/v0.3.0-vessel-map-B.png)
 打点 = 报告原文提到过该节段；不表示程度、不做分级；同一节段多次记录翻卡可看历次原文。
-![折叠卡展开](docs/screenshots/v0.2.0-fold-open-dxvessel-B.png)
-![折叠卡收起](docs/screenshots/v0.2.0-fold-closed-dxvessel-B.png)
+![折叠卡展开](docs/screenshots/v0.3.0-fold-open-dxvessel-B.png)
+![折叠卡收起](docs/screenshots/v0.3.0-fold-closed-dxvessel-B.png)
 按一次影像报告折叠（原生 details，可打印全展开），新报告不覆盖旧记录。
 
 ### 四肢血压成对记录
-![四肢血压](docs/screenshots/v0.2.0-bp-pairs-B.png)
+![四肢血压](docs/screenshots/v0.3.0-bp-pairs-B.png)
 左臂/右臂/双踝成对录入，自动显示「较上次差值」；部位不全时如实写「未计算差值」，不做分级。
 
 ### 病情一图秀
-![一图秀](docs/screenshots/v0.2.0-one-chart-B.png)
+![一图秀](docs/screenshots/v0.3.0-one-chart-B.png)
 每条线按该指标全期 min/max 归一化并标注「不可比」；单点不连线；事件条与曲线分层展示；数据点可点开看原始来源。
 
 ### 用药与减量阶梯
-![用药阶梯](docs/screenshots/v0.2.0-meds-taper-B.png)
+![用药阶梯](docs/screenshots/v0.3.0-meds-taper-B.png)
 激素剂量按日期排成阶梯（仅回顾，不是建议）；医生原话单独留痕在「用药说明与医嘱」。
 
 ### 疾病概要整页（顶栏 ?）
-![疾病概要](docs/screenshots/v0.2.0-disease-primer-open.png)
+![疾病概要](docs/screenshots/v0.3.0-disease-primer-open.png)
 四段固定：定义 → 医学资料规范和指南情况 → 治疗全景 → 发展趋势；每段强制来源行；趋势段只写已发生事实并带日期。
 
+### 设置三 tab（工作区 / 文档解析 MinerU / 临床数据库）
+![设置](docs/screenshots/v0.3.0-settings.png)
+工作区有体积 tile 与「拒绝主目录/桌面/下载根」口径；MinerU tab 有同意勾选、Token 掩码（只显末 4 位）、4 步申请指南、Flash 免费额度 10MB/20 页，并如实标注「本仓未接入——勾选与保存不联网」；临床数据库 tab 与快照来源终态对账（FAILED 写 FAILED）。
+
+### 临床研究四段链路（登记摘录 + 匹配证据链）
+![临床研究](docs/screenshots/v0.3.0-trials-match.png)
+建档 → 检索（按条件排，不掺分数）→ 匹配卡（大号「登记字段符合度」+ 固定行「n / m 项对得上 · k 项待确认」+ 档位词 + 「不是入组资格判断」声明）→ 收藏本机（在跟/准备问/已归档）；点卡开右侧浮窗看逐条证据链与「入排标准请到官方登记页核对」声明。
+
+### 录入窗（三态按钮）
+每页「记一条」入口打开录入窗：**保存并继续录入 / 保存并关闭 / 取消**；字段 ≤6、数字键盘、必填校验；就医信息多医院卡（修改=新版本+查看历史，schema 0003 hospital 表）。
+
 ### AI 草稿（未接入，只填不发）
-![AI 草稿](docs/screenshots/v0.2.0-ai-draft-dashboard.png)
+![AI 草稿](docs/screenshots/v0.3.0-ai-draft-dashboard.png)
 每页「和 AI 讨论」只把预写提示词放进右侧面板，标明「未接通任何模型，不会发送」；私密条目不进 AI 上下文。
 
 ## 怎么用
@@ -84,7 +95,7 @@
 
 ```bash
 npm run check          # 静态检查链（staticPass=true）
-node scripts/probe-tak-m2.mjs        # M2 原型探针（32 条真实浏览器断言）
+node scripts/probe-tak-m2.mjs        # 原型探针（57 条真实浏览器断言：A/C/D/E/F 组含 Inspector 回归）
 node scripts/probe-page-view.mjs     # 家族整页视图探针（starter 契约自检）
 node scripts/probe-disease-primer.mjs --self-test  # 疾病概要探针
 node scripts/shoot-prototype.mjs     # 重新生成 README 截图

@@ -107,6 +107,10 @@ export function readProfile(db, pr) {
     status: d.status === 'original' ? '原文' : '草稿待核对',
     origin: originLabel(d.origin), private: d.visibility === 'private',
   }));
+  const hospitals = db.prepare('SELECT * FROM hospital WHERE profile_id = ? AND in_use = 1 ORDER BY ord, rowid').all(id).map((h, i) => ({
+    id: i + 1, name: h.name, dept: h.dept, contactKind: h.contact_kind,
+    contactText: h.contact_text, revision: h.revision,
+  }));
   const candidates = db.prepare('SELECT * FROM candidate_fact WHERE profile_id = ? ORDER BY rowid').all(id).map((c, i) => {
     const p = JSON.parse(c.payload_json || '{}');
     return { id: 'cand-' + (i + 1), kind: c.fact_kind, ...p, verified: !!c.verified };
@@ -117,6 +121,6 @@ export function readProfile(db, pr) {
     meta: pr.meta_text || '', headline: pr.headline || '', mindset: pr.mindset || '',
     dxText: pr.dx_quote || '', diagnosisDate: pr.first_confirmed_date || null, hospital: pr.hospital || null,
     vesselRecords, imaging, metrics, bpRecords, meds, events, screenings,
-    mindEntries, lifeEntries, pregList, pregTrack: [], docs, candidates,
+    mindEntries, lifeEntries, pregList, pregTrack: [], docs, hospitals, candidates,
   };
 }

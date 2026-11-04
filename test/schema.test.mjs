@@ -4,13 +4,13 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { DatabaseSync } from 'node:sqlite'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const SQL = readFileSync(join(ROOT, 'schema/0001_initial.sql'), 'utf-8')
+const SQL = readdirSync(join(ROOT, 'schema')).filter((f) => /^\d{4}_.*\.sql$/.test(f)).sort().map((f) => readFileSync(join(ROOT, 'schema', f), 'utf-8')).join('\n')
 const BANNED = /diagnosis|risk_level|activity_score|severity|stenosis_grade|flare_flag|remission_flag|relapse|eligible|verdict|recommend/i
 
 function build() {
@@ -19,10 +19,10 @@ function build() {
   return db
 }
 
-test('schema: 20 tables build in memory', () => {
+test('schema: all migrations build in memory (21 tables)', () => {
   const db = build()
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all()
-  assert.equal(tables.length, 20, `期望 20 表，实得 ${tables.length}`)
+  assert.equal(tables.length, 21, `期望 21 表（0001 20 + 0003 hospital），实得 ${tables.length}`)
 })
 
 test('schema: 判读列断言（全表全列 0 命中）', () => {
@@ -65,7 +65,7 @@ test('schema: feeling_note 默认私密（K6）', () => {
 })
 
 test('schema: freeze-contract sha256 与 0001_initial.sql 一致', () => {
-  const sha = createHash('sha256').update(SQL).digest('hex')
+  const sha = createHash('sha256').update(readFileSync(join(ROOT, 'schema/0001_initial.sql'))).digest('hex')
   const doc = readFileSync(join(ROOT, 'schema/freeze-contract.md'), 'utf-8')
   assert.ok(doc.includes(sha), `freeze-contract.md 未包含当前 sha256 ${sha}——冻结被破坏或忘更新`)
 })

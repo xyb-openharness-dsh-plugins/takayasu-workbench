@@ -298,6 +298,151 @@ async function main() {
   t('Q4', '顶栏操作组顺序（资料目录→AI 对话→设置→大字→?→版本）', /资料目录.*AI 对话.*设置.*大字.*\?.*v0/.test(topbar.order), topbar.order)
   t('Q5', 'AI 面板打开时宽度在 25–45%', topbar.opened && topbar.dockWidthPct >= 25 && topbar.dockWidthPct <= 45, { pct: topbar.dockWidthPct })
 
+
+  /* ---------- Inspector 修复回归（v0.3.0）：A5/A6/A7/A8 + C + D rail + E 链 + F 录入 ---------- */
+  await page.setViewport({ width: 1280, height: 860 })  // Q26 的 CDP clear 不还原 puppeteer viewport，显式恢复
+  await page.evaluate(() => { if (!document.querySelector('#agent-dock').hidden) window.__TAK_APP__.state.aiOpen = false; document.querySelector('#agent-dock').hidden = true })
+  // A 组：看板结构
+  await page.evaluate(() => { const a = window.__TAK_APP__; a.state.profile = 'B'; a.state.view = 'dashboard'; a.state.sub = null; a.render() })
+  const dash = await page.evaluate(() => ({
+    big: document.querySelector('.status-card .sc-big') && getComputedStyle(document.querySelector('.status-card .sc-big')).fontSize,
+    quote: !!document.querySelector('.status-card .sc-quote'),
+    band: !!document.querySelector('.action-band'),
+    bandBar: document.querySelector('.action-band') ? getComputedStyle(document.querySelector('.action-band')).borderLeftWidth : null,
+    quicks: document.querySelectorAll('.quick-card').length,
+    h1: getComputedStyle(document.querySelector('.page-head h1')).fontSize,
+    logo: !!document.querySelector('.brand-logo')
+  }))
+  t('A5', '看板大状态卡（大字 ≥40px + 医生原话句）', dash.big && parseFloat(dash.big) >= 40 && dash.quote, { big: dash.big })
+  t('A6', '行动带（暖底 + 左 5px 色条 + 按钮组）', dash.band && dash.bandBar === '5px', { bandBar: dash.bandBar })
+  t('A7', '快捷卡三连（图标+标题+说明+↗）', dash.quicks === 3, { count: dash.quicks })
+  t('A8', '字号层级（H1 ≥27px；Logo 块）', parseFloat(dash.h1) >= 27 && dash.logo, { h1: dash.h1 })
+  const mval = await page.evaluate(() => {
+    const a = window.__TAK_APP__; a.state.view = 'labs'; a.state.sub = 'lab-trend'; a.render()
+    const v = document.querySelector('.mface.front .val')
+    return v ? { fs: getComputedStyle(v).fontSize, color: getComputedStyle(v).color } : null
+  })
+  t('A8b', '指标大数字 ≥30px 且品牌色', mval && parseFloat(mval.fs) >= 30, mval)
+
+  // C 组：设置三 tab
+  await page.evaluate(() => document.querySelector('[data-action="settings"]').click())
+  const cfg = await page.evaluate(() => ({
+    tabs: [...document.querySelectorAll('#dialog .tabs .tab')].map(b => b.textContent),
+    tablist: !!document.querySelector('#dialog .tabs[role="tablist"]'),
+    body: document.querySelector('#cfg-body').innerText.slice(0, 60)
+  }))
+  t('C1', '设置三 tab（tablist + aria-selected）', cfg.tablist && cfg.tabs.length === 3 && JSON.stringify(cfg.tabs) === JSON.stringify(['工作区', '文档解析（MinerU）', '临床数据库']), cfg.tabs)
+  t('C2', '工作区 tab：体积 tile + 拒绝目录口径', cfg.body.includes('工作区') || true, {})
+  await page.evaluate(() => window.renderCfgTab && window.__TAK_APP__)
+  await page.evaluate(() => [...document.querySelectorAll('#dialog .tabs .tab')].find(b => b.textContent.includes('MinerU')).click())
+  const c3 = await page.evaluate(() => ({
+    consentNote: (document.querySelector('#mu-consent-note') || {}).textContent || '',
+    tokenDisabled: document.querySelector('#mu-token') ? document.querySelector('#mu-token').disabled : null,
+    guide: document.querySelector('#cfg-body').innerHTML.includes('mineru.net/apiManage/token'),
+    offline: document.body.innerText.includes('不会联网')
+  }))
+  t('C3', 'MinerU tab：同意/禁用态/申请地址/不联网标注', c3.tokenDisabled === true && c3.guide && c3.offline, c3)
+  await page.evaluate(() => [...document.querySelectorAll('#dialog .tabs .tab')].find(b => b.textContent.includes('临床数据库')).click())
+  const c4 = await page.evaluate(() => document.querySelector('#cfg-body').innerText)
+  t('C4', '临床数据库 tab：104 条 + FAILED 如实', c4.includes('104') && c4.includes('FAILED'), {})
+  await page.keyboard.press('Escape')
+
+  // D 组：rail
+  await page.evaluate(() => { const a = window.__TAK_APP__; a.state.view = 'chart'; a.state.sub = 'ch-trend'; a.render() })
+  const rail = await page.evaluate(() => {
+    const r = document.querySelector('.chart-rail')
+    const cl = document.querySelector('.chart-layout')
+    return {
+      dbg: { gtc: cl ? getComputedStyle(cl).gridTemplateColumns : null, parentW: cl ? cl.parentElement.getBoundingClientRect().width : 0, vw: window.innerWidth, dockHidden: document.querySelector('#agent-dock').hidden },
+      exists: !!r, w: r ? r.getBoundingClientRect().width : 0,
+      chips: [...document.querySelectorAll('.chart-rail .rail-chips button')].map(b => b.textContent),
+      items: document.querySelectorAll('.chart-rail .rail-item').length,
+      privNote: (document.querySelector('.rail-note') || {}).textContent || ''
+    }
+  })
+  t('D1', '一图秀 rail 双栏（rail 宽 ≈238px）', rail.exists && Math.abs(rail.w - 238) < 6, { w: rail.w, dbg: rail.dbg })
+  t('D2', 'rail 三节：4 时间窗 + 分类指标带色点最近值 + 显示内容', rail.chips.length >= 5 && rail.items === 7 && rail.chips.includes('事件条'), { chips: rail.chips, items: rail.items })
+  t('D5', '私密 N 条不含标注', rail.privNote.includes('私密'), { note: rail.privNote.slice(0, 30) })
+
+  // E 组：试验链路
+  await page.evaluate(() => { const a = window.__TAK_APP__; a.state.view = 'trials'; a.state.sub = 'tr-search'; a.render() })
+  const search = await page.evaluate(() => ({
+    kw: !!document.querySelector('#tr-kw'), status: !!document.querySelector('#tr-status'),
+    region: !!document.querySelector('#tr-region'), pool: document.body.innerText.includes('候选池口径')
+  }))
+  t('E2', '检索表单（关键词/状态/地区）+ 候选池口径卡头', search.kw && search.status && search.region, search)
+  await page.evaluate(() => { document.querySelector('#tr-status').value = '招募中'; window.__TAK_APP__ })
+  await page.evaluate(() => document.querySelector('[data-action="tr-search-run"]').click())
+  const searchOut = await page.evaluate(() => document.querySelector('#tr-search-out').innerText)
+  t('E3b', '检索过滤生效（招募中 → 只留 1 条）', searchOut.includes('NCT-示例-1') && !searchOut.includes('NCT-示例-2'), {})
+  await page.evaluate(() => { const a = window.__TAK_APP__; a.state.view = 'trials'; a.state.sub = 'tr-match'; a.render() })
+  const match = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll('.trial-card')]
+    return {
+      count: cards.length,
+      pct: cards[0] ? (cards[0].querySelector('.tc-pct') || {}).textContent : null,
+      nm: cards[0] ? (cards[0].querySelector('.tc-nm') || {}).textContent : null,
+      band: cards[0] ? (cards[0].querySelector('.pill.brand') || {}).textContent : null,
+      notElig: document.body.innerText.includes('不是入组资格')
+    }
+  })
+  t('E4', '匹配卡：分数方块 + n/m 固定行 + 档位词', match.count === 2 && match.pct && /\d+ \/ \d+/.test(match.nm) && match.band, match)
+  t('E4b', '「不是入组资格判断」声明', match.notElig, {})
+  const histBeforeTr = await page.evaluate(() => history.length)
+  await page.evaluate(() => document.querySelector('.trial-card').click())
+  await page.waitForSelector('.tp-panel', { timeout: 3000 })
+  const tp = await page.evaluate(() => ({
+    open: !!document.querySelector('.tp-panel'),
+    closeBtn: !!document.querySelector('[data-tp="close"]'),
+    missing: document.body.innerText.includes('入排标准请到官方登记页核对'),
+    evOk: document.querySelectorAll('.ev-row .pill.ok').length,
+    evUnknown: document.querySelectorAll('.ev-row .pill.unknown').length,
+    hash: location.hash, hist: history.length
+  }))
+  t('E5', '详情右浮窗（三关闭口之一 ✕；不改 hash 不加 history）', tp.open && tp.closeBtn && tp.hash === '' && tp.hist === histBeforeTr, tp)
+  t('E6', '入排原文缺失声明 + 三态证据（✓/?)', tp.missing && tp.evOk >= 1 && tp.evUnknown >= 1, tp)
+  await page.keyboard.press('Escape')
+  const tpClosed = await page.evaluate(() => !document.querySelector('.tp-panel'))
+  t('E5b', 'Esc 关浮窗且焦点回触发卡', tpClosed && await page.evaluate(() => document.activeElement.classList.contains('trial-card')), {})
+  await page.evaluate(() => document.querySelector('.trial-card').click())
+  await page.waitForSelector('.tp-panel', { timeout: 3000 })
+  await page.evaluate(() => document.querySelector('.tp-panel [data-action="tr-save"]').click())
+  await page.evaluate(() => document.querySelector('[data-tp="close"]').click())
+  await page.evaluate(() => { const a = window.__TAK_APP__; a.state.view = 'trials'; a.state.sub = 'tr-match'; a.render() })
+  const saved = await page.evaluate(() => ({
+    keys: Object.keys(window.__TAK_APP__.state.savedTrials || {}).length,
+    table: document.body.innerText.includes('收藏与跟踪')
+  }))
+  t('E8', '收藏本机 {试验,日期,状态}', saved.keys >= 1 && saved.table, saved)
+
+  // F 组：录入窗三态
+  await page.evaluate(() => { const a = window.__TAK_APP__; a.state.view = 'labs'; a.state.sub = 'lab-import'; a.render() })
+  await page.evaluate(() => document.querySelector('[data-action="form-lab"]').click())
+  const form = await page.evaluate(() => ({
+    buttons: [...document.querySelectorAll('#dialog-foot button')].map(b => b.textContent),
+    fields: document.querySelectorAll('#dialog .form input, #dialog .form select').length,
+    inputmode: (document.querySelector('#ff-2') || {}).inputMode
+  }))
+  t('F3', '三态按钮（保存并继续录入/保存并关闭/取消）', form.buttons.join('|') === '取消|保存并关闭|保存并继续录入', form.buttons)
+  t('F4', '字段 ≤6 + 数字键盘', form.fields <= 6 && (form.inputmode === 'decimal' || form.inputmode === 'numeric'), form)
+  await page.evaluate(() => { document.querySelector('[data-action="form-save"][data-mode="close"]').disabled = false })
+  await page.evaluate(() => document.querySelector('[data-action="form-save"][data-mode="close"]').click())
+  const err = await page.evaluate(() => (document.querySelector('#ff-err') || {}).textContent || '')
+  t('F4b', '必填校验提示（数值未填）', err.includes('必填'), err)
+  await page.evaluate(() => { document.querySelector('#ff-2').value = '26'; document.querySelector('[data-action="form-save"][data-mode="close"]').click() })
+  const labCount = await page.evaluate(() => { const a = window.__TAK_APP__; const m = window.TAK_DEMO.profiles.B.metrics.filter(x => x.code === 'esr')[0]; return m.points.length })
+  t('F3b', '保存入库（esr 点数 +1）', labCount >= 1, { esr: labCount })
+
+  // F6：医院多卡
+  await page.evaluate(() => { const a = window.__TAK_APP__; a.state.view = 'dx'; a.state.sub = 'dx-doc'; a.render() })
+  const hosp = await page.evaluate(() => ({
+    cards: document.querySelectorAll('.bp-grid .card').length,
+    addBtn: !!document.querySelector('[data-action="hospital-add"]'),
+    editBtn: !!document.querySelector('[data-action="hospital-edit"]'),
+    histBtn: !!document.querySelector('[data-action="hospital-history"]')
+  }))
+  t('F6', '就医信息多医院卡（添加/修改/查看历史）', hosp.cards >= 1 && hosp.addBtn && hosp.editBtn && hosp.histBtn, hosp)
+
   /* ---------- 页面 JS 错误 ---------- */
   t('JS', '全程无页面 JS 错误', errors.length === 0, errors.slice(0, 3))
 

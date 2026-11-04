@@ -83,6 +83,9 @@
       { id: 1, date: '2026-10-22', text: '下午容易累，爬三层楼会喘，医生说先观察、不剧烈运动。', source: '本人记录' }
     ],
     pregList: [], pregTrack: [],
+    hospitals: [
+      { id: 1, name: '市人民医院', dept: '风湿免疫科', contactKind: 'quote', contactText: '地址与电话见门诊病历首页（2026-09-18）', revision: 1 }
+    ],
     docs: [
       { id: 1, name: '确诊门诊病历（2026-09-18）', date: '2026-09-18', type: '门诊病历', status: '原文', origin: '拍照导入', private: false },
       { id: 2, name: 'CTA 报告（2026-09-12）', date: '2026-09-12', type: '影像报告', status: '草稿待核对', origin: '手工录入', private: false }
@@ -244,6 +247,10 @@
       { id: 5, text: '分娩方式需要根据血管情况定吗？（待问）', verified: false, asked: null }
     ],
     pregTrack: [],
+    hospitals: [
+      { id: 1, name: '省风湿病专科医院', dept: '风湿免疫科', contactKind: 'phone', contactText: '020-8888xxxx（随访护士站，2025-08-05 门诊记）', revision: 2 },
+      { id: 2, name: '市人民医院', dept: '风湿免疫科（就近复查）', contactKind: 'quote', contactText: '出处：2023-02-14 门诊病历', revision: 1 }
+    ],
     docs: [
       { id: 1, name: '2018 住院小结（确诊）', date: '2018-03-06', type: '住院小结', status: '原文', origin: '扫描导入', private: false },
       { id: 2, name: '2018-02-28 CTA 报告', date: '2018-02-28', type: '影像报告', status: '原文', origin: '扫描导入', private: false },

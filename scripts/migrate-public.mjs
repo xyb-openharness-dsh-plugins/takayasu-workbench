@@ -20,21 +20,21 @@ const OUT = join(ROOT, 'public');
 const CHECK = process.argv.includes('--check');
 const FILES = ['index.html', 'app.js', 'style.css', 'demo-data.js', 'primer-data.js', 'primer.js'];
 
-const BAR_OLD = '<div class="prototype-bar"><span><b>交互原型 v0.2.0</b> · 全部为合成示例（临床试验列表为真实登记摘录）</span><span>仅本页演示 · 刷新重置 · 未接入 DSH / AI</span></div>';
+const BAR_OLD = '<div class="prototype-bar"><span><b>交互原型 v0.3.0</b> · 全部为合成示例（临床试验列表为真实登记摘录）</span><span>仅本页演示 · 刷新重置 · 未接入 DSH / AI</span></div>';
 const BAR_NEW = '<div class="prototype-bar"><span><b>开发版</b> · 本机数据 · 不上传 · AI 面板由宿主提供 · 业务数据仍为演示内容直到导入真实资料</span><span>版本 <b>__VERSION_DISPLAY__</b></span></div>';
 
 function migrateIndex(s) {
   return s
-    .replace('<title>小弓宝 ArchPal · 大动脉炎工作台原型 v0.2.0</title>', '<title>小弓宝 ArchPal · 大动脉炎工作台</title>\n<meta name="robots" content="noindex,nofollow">')
+    .replace('<title>小弓宝 ArchPal · 大动脉炎工作台原型 v0.3.0</title>', '<title>小弓宝 ArchPal · 大动脉炎工作台</title>\n<meta name="robots" content="noindex,nofollow">')
     .replace(BAR_OLD, BAR_NEW)
-    .replace('>v0.2.0</button>', '>__VERSION_DISPLAY__</button>')
-    .replace('<b id="app-version">v0.2.0</b><em id="app-build">2026-11-05</em>', '<b id="app-version">__VERSION_DISPLAY__</b><em id="app-build">__BUILD_DATE__</em>');
+    .replace('>v0.3.0</button>', '>__VERSION_DISPLAY__</button>')
+    .replace('<b id="app-version">v0.3.0</b><em id="app-build">2026-11-05</em>', '<b id="app-version">__VERSION_DISPLAY__</b><em id="app-build">__BUILD_DATE__</em>');
 }
 
 function migrateApp(s) {
   return s
-    .replace('小弓宝 ArchPal · 大动脉炎工作台原型 v0.2.0', '小弓宝 ArchPal · 大动脉炎工作台（版本走注入占位符）')
-    .replace("version: '0.2.0', build: '2026-11-05'", "version: '__VERSION__', build: '__BUILD_DATE__'") + `
+    .replace('小弓宝 ArchPal · 大动脉炎工作台原型 v0.3.0', '小弓宝 ArchPal · 大动脉炎工作台（版本走注入占位符）')
+    .replace("version: '0.3.0', build: '2026-11-05'", "version: '__VERSION__', build: '__BUILD_DATE__'") + `
 
 /* ── 开发版数据源（scripts/migrate-public.mjs 注入点；原型无此块）──
    宿主形态优先 bootstrap（读模型还原 demo 形状，parity 由测试断言）；

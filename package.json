@@ -1,6 +1,6 @@
 {
   "name": "@xyb-community/takayasu-workbench",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "本机优先的大动脉炎（Takayasu Arteritis）确诊档案与随访资料整理工作台：受累血管节段记录、炎症指标（ESR/CRP）趋势、四肢血压成对对比、激素与免疫抑制剂剂量记录、影像随访与复诊准备（品牌名「小弓宝」为占位，待晨审追认）",
   "private": true,
   "type": "module",
@@ -23,7 +23,7 @@
     "NOTICE.md"
   ],
   "scripts": {
-    "check": "node --check dsh/index.js && node --check lib/client.js && node scripts/check-workbench-package.mjs . && node scripts/check-host-contract.mjs && node scripts/smoke-activate.mjs && node scripts/check-probe-coverage.mjs && node scripts/check-version-literal.mjs && node scripts/check-static-refs.mjs && node scripts/check-choice-limit.mjs && node scripts/check-assertion-strength.mjs && node scripts/check-derivative-leftovers.mjs . && node scripts/check-trial-snapshot.mjs . --if-present && node scripts/check-primer-links.mjs && node scripts/check-schema.mjs && node scripts/build-version.mjs --check && node scripts/build-client.mjs --check && node scripts/migrate-public.mjs --check && node scripts/check-public-tokens.mjs && node scripts/check-wording.mjs && node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test/*.test.mjs",
+    "check": "node --check dsh/index.js && node --check lib/client.js && node scripts/check-workbench-package.mjs . && node scripts/check-host-contract.mjs && node scripts/smoke-activate.mjs && node scripts/check-probe-coverage.mjs && node scripts/check-version-literal.mjs && node scripts/check-static-refs.mjs && node scripts/check-choice-limit.mjs && node scripts/check-assertion-strength.mjs && node scripts/check-derivative-leftovers.mjs . && node scripts/check-trial-snapshot.mjs . --if-present && node scripts/check-primer-links.mjs && node scripts/check-schema.mjs && node scripts/build-version.mjs --check && node scripts/build-client.mjs --check && node scripts/migrate-public.mjs --check && node scripts/check-public-tokens.mjs && node scripts/check-wording.mjs && node scripts/check-trial-matching.mjs . && node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test/*.test.mjs",
     "check:version-literal": "node scripts/check-version-literal.mjs",
     "check:host": "node scripts/check-host-contract.mjs",
     "check:static-refs": "node scripts/check-static-refs.mjs",

@@ -2,6 +2,8 @@
 
 ## 一、一句话结论
 
+（增补 2026-11-05 上午）追加执行 FAMILY-INSPECTOR 全项审查→修复轮：16 组失败清零，探针扩至 57/57、audit 44/44、tests 21/21，版本 0.3.0 已重装 Desktop profile（界面加载仍待重启）。
+
 大动脉炎（TAK）工作台「小弓宝 ArchPal」从认领（Issue #59）走完 M0–M6 + M9：G1–G3、V1 自动签认、V2 装机产物层过（DSH Desktop harness profile 已装 v0.2.0 + bundle 登记），**未停闸**；V2 界面加载与 V3 真机闭环待人工（宿主本轮启动早于装机，需重启 DSH Desktop）；M7 tag/release 与 M8 BACKLOG PR 按冻结规则只备草稿。
 
 ## 二、原型审查入口

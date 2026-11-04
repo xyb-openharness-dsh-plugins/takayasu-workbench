@@ -13,7 +13,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const OUT = join(ROOT, 'docs', 'screenshots')
 const PORT = 8147
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' }
-const VERSION = 'v0.2.0'
+const VERSION = 'v0.3.0'
 
 const server = createServer(async (req, res) => {
   try {
@@ -88,6 +88,18 @@ async function main() {
   // 8. 用药与减量（阶梯图）
   await app(() => { const a = window.__TAK_APP__; a.state.view = 'meds'; a.state.sub = 'med-gluc'; a.render() })
   await shot('meds-taper-B')
+
+  // 8b. 设置三 tab（C 组）
+  await page.evaluate(() => { const a = window.__TAK_APP__; a.state.view = 'dashboard'; a.render(); document.querySelector('[data-action="settings"]').click() })
+  await new Promise(r => setTimeout(r, 400))
+  await page.screenshot({ path: join(OUT, `${VERSION}-settings.png`) })
+  console.log('shot: settings')
+  await page.keyboard.press('Escape')
+  // 8c. 临床研究匹配卡（E 组）
+  await page.evaluate(() => { const a = window.__TAK_APP__; a.state.view = 'trials'; a.state.sub = 'tr-match'; a.render() })
+  await new Promise(r => setTimeout(r, 350))
+  await page.screenshot({ path: join(OUT, `${VERSION}-trials-match.png`) })
+  console.log('shot: trials-match')
 
   // 9. 疾病概要整页（P 组）
   await app(() => { const t = document.querySelector('[data-primer-open]'); t.focus(); t.click() })

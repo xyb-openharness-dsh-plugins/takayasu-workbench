@@ -24,6 +24,7 @@ export function seedDemoData(db, { force = false } = {}) {
     db.prepare('DELETE FROM document').run();
     db.prepare('DELETE FROM profile').run();
     db.prepare('DELETE FROM metric_def').run();
+    db.prepare('DELETE FROM hospital').run();
     db.prepare('DELETE FROM vessel_segment_def').run();
   }
   const tx = db;
@@ -69,6 +70,9 @@ export function seedDemoData(db, { force = false } = {}) {
   var dcIns = tx.prepare('INSERT INTO document (profile_id, title, doc_date, doc_type, status, origin, visibility) VALUES (?,?,?,?,?,?,?)');
   var dcRows = [["A", "确诊门诊病历（2026-09-18）", "2026-09-18", "门诊病历", "original", "photo", "public"], ["A", "CTA 报告（2026-09-12）", "2026-09-12", "影像报告", "draft", "manual", "public"]];
   for (r of dcRows) dcIns.run(...r);
+  var hpIns = tx.prepare('INSERT INTO hospital (profile_id, name, dept, contact_kind, contact_text, ord, revision) VALUES (?,?,?,?,?,?,?)');
+  var hpRows = [["A", "市人民医院", "风湿免疫科", "quote", "地址与电话见门诊病历首页（2026-09-18）", 0, 1]];
+  for (r of hpRows) hpIns.run(r[0], r[1], r[2], r[3], r[4], r[5], r[6] || 1);
   var cfIns = tx.prepare('INSERT INTO candidate_fact (profile_id, fact_kind, payload_json, verified) VALUES (?,?,?,?)');
   cfIns.run("A", "metric", "{\"kind\": \"metric\", \"code\": \"esr\", \"date\": \"2026-11-03\", \"value\": 26, \"unit\": \"mm/h\", \"method\": \"Westergren\", \"org\": \"市人民医院\", \"from\": \"化验单照片解析\"}", 0);
   cfIns.run("A", "bp", "{\"kind\": \"bp\", \"date\": \"2026-11-03\", \"armL\": {\"sys\": 114, \"dia\": 72}, \"armR\": {\"sys\": 98, \"dia\": 64}, \"from\": \"血压记录单解析\"}", 0);
@@ -108,6 +112,8 @@ export function seedDemoData(db, { force = false } = {}) {
   var dcIns = tx.prepare('INSERT INTO document (profile_id, title, doc_date, doc_type, status, origin, visibility) VALUES (?,?,?,?,?,?,?)');
   var dcRows = [["B", "2018 住院小结（确诊）", "2018-03-06", "住院小结", "original", "import", "public"], ["B", "2018-02-28 CTA 报告", "2018-02-28", "影像报告", "original", "import", "public"], ["B", "2021-05-14 MRA 报告", "2021-05-14", "影像报告", "original", "import", "public"], ["B", "2024-11-20 MRA 报告", "2024-11-20", "影像报告", "draft", "manual", "public"], ["B", "2024-12-02 门诊病历（生育咨询）", "2024-12-02", "门诊病历", "original", "photo", "private"], ["B", "2025-08-05 化验单（9 张）", "2025-08-05", "化验单", "original", "photo", "public"]];
   for (r of dcRows) dcIns.run(...r);
+  var hpRows = [["B", "省风湿病专科医院", "风湿免疫科", "phone", "020-8888xxxx（随访护士站，2025-08-05 门诊记）", 0, 2], ["B", "市人民医院", "风湿免疫科（就近复查）", "quote", "出处：2023-02-14 门诊病历", 1, 1]];
+  for (r of hpRows) hpIns.run(...r);
   var cfIns = tx.prepare('INSERT INTO candidate_fact (profile_id, fact_kind, payload_json, verified) VALUES (?,?,?,?)');
   cfIns.run("B", "metric", "{\"kind\": \"metric\", \"code\": \"crp\", \"date\": \"2026-01-15\", \"value\": 2.2, \"unit\": \"mg/L\", \"method\": \"免疫比浊\", \"org\": \"省风湿病专科医院\", \"from\": \"化验单照片解析\"}", 0);
   cfIns.run("B", "screening", "{\"kind\": \"screening\", \"date\": \"2026-01-15\", \"item\": \"心脏超声\", \"plan\": \"医生说每年一次\", \"lastResult\": \"主动脉瓣轻度反流（报告首页解析）\", \"from\": \"报告解析\"}", 0);

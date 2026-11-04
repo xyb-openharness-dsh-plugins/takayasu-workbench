@@ -2,7 +2,7 @@
  * 同时校验 freeze-contract.md 的 sha256 与文件一致（改包必升版/改 schema 必更新冻结）
  */
 import { DatabaseSync } from 'node:sqlite'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -18,7 +18,7 @@ db.exec(sql)
 const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all().map(r => r.name)
 const hits = []
 for (const t of tables) for (const c of db.prepare(`PRAGMA table_info(${t})`).all()) if (BANNED.test(c.name)) hits.push(`${t}.${c.name}`)
-const sha = createHash('sha256').update(sql).digest('hex')
+const sha = createHash('sha256').update(readFileSync(join(target, 'schema/0001_initial.sql'))).digest('hex')
 const freezePath = join(target, 'schema/freeze-contract.md')
 const freezeOk = existsSync(freezePath) && readFileSync(freezePath, 'utf-8').includes(sha)
 const pass = hits.length === 0 && tables.length >= 15 && freezeOk
