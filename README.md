@@ -1,44 +1,79 @@
 # 小弓宝 ArchPal · 大动脉炎（TAK）工作台
 
-本机优先的大动脉炎（Takayasu Arteritis）确诊档案与随访资料整理工作台：受累血管节段记录、炎症指标（ESR/CRP）趋势、四肢血压成对对比、激素与免疫抑制剂剂量记录、影像随访与复诊准备（品牌名「小弓宝」为占位，待晨审追认）
+本机优先的大动脉炎（Takayasu Arteritis）确诊档案与随访资料整理工作台：受累血管节段记录、炎症指标（ESR/CRP）趋势、四肢血压成对对比、激素与免疫抑制剂剂量记录、影像随访与复诊准备。
 
-这是接入骨架，尚未实现真实业务。初始化后先将 [项目设计提示词](docs/DESIGN-PROMPT.md) 交给当前Agent；它应展示实际路径并以已有用户/场景/流程素材对齐设计者、研究与取舍原则。癌种项目另有 [完整专用提示词](prompts/NEW-CANCER-WORKBENCH.md)。需求见 [BRIEF](docs/BRIEF.md)，规格见 [SPEC](docs/SPEC.md)，任务见 [TASKS](docs/TASKS.md)；先读 [AGENTS](AGENTS.md)。CLI输出交接与首问，实际对话由Agent接续。
+> 品牌名「小弓宝 / ArchPal」为占位，待晨审追认。
+> **诚实声明：0 患者访谈、0 临床审核。** 全部场景为假设、全部演示数据为合成示例；医学口径已对照国家卫健委《86 个罕见病病种诊疗指南（2025 年版）》第 76 节原件核数（见 docs/CLINICAL-DATA.md 台账），阈值仍为【待核】占位。本工作台只做信息整理与就诊准备，不做诊断、不判活动度、不选治疗。
 
-## 开发顺序
+## 疾病概要
 
-先共创SPEC和候选数据关系，再交付HTML交互工作台；由用户确认对应版本/模块后，复核SCHEMA/API并实现生产功能。确认记录见docs/PROTOTYPE-REVIEW.md；模型不依赖前端Tab/流程。模板骨架不是业务已确认。
+大动脉炎（TAK）是一种累及主动脉及其一级分支的慢性肉芽肿性大血管炎，可引起血管壁增厚、管腔狭窄或闭塞、动脉瘤形成；在中国列入国家罕见病指南管理（2025 年版第 76 节，PDF 页 454–461，原件已取得）。人群特征（指南引用的上海调查）：男女比约 1∶4，多在青年期发病，90% 在 30 岁前发病。完整四段概要（定义 → 医学资料规范和指南情况 → 治疗全景 → 发展趋势）在原型顶栏「?」整页打开，每段带来源行。
 
-## 当前能力
+## 关键功能（截图墙 · v0.2.0 原型实渲）
 
-- 一个 DSH 工作台注册、认证的健康接口、版本展示与标准/大字切换。
-- 已明确选择布局：business-first。business-first 使用 customFrame；模板不创建会话或复制聊天。需要 AI 协助时按官方合同接入原生 conversation 和会话管理。
-- 无业务数据库、无演示患者、无真实密钥；所有业务页按确认 spec 逐项实现。
+### 看板：确诊、血管、指标、血压、用药放在一页
+![看板](docs/screenshots/v0.2.0-dashboard-A.png)
+刚确诊的患者一进来就能看到「该看什么、缺什么」；全部数字来自同一份合成示例数据，标注"仅演示，未连接真实病历与宿主"。
 
-## 开发与本地验收
+### 检查与指标：194px 定高 3D 翻转卡
+![指标卡](docs/screenshots/v0.2.0-metric-cards-B.png)
+正面是最近值/较上次差值/次数/来源（差值只写「较上次」，不暗示好坏）；不同方法/机构来源时同屏提示「不合并、不连线、解读归医生」。
+![翻转背面](docs/screenshots/v0.2.0-metric-card-flipped-B.png)
+背面是最近 8 次折线与时间范围；单点序列不连线，只有 1 次记录会明说。
 
-需要 Node.js 22+、Git、包管理器和可用 DSH Desktop；采用 SQLite 时另核验 node:sqlite 版本条件。宿主 peers 的范围仅是模板基线，请与目标 Desktop 实际依赖核对。
+### 受累血管图谱：报告原文按节段留版本
+![受累血管](docs/screenshots/v0.2.0-vessel-map-B.png)
+打点 = 报告原文提到过该节段；不表示程度、不做分级；同一节段多次记录翻卡可看历次原文。
+![折叠卡展开](docs/screenshots/v0.2.0-fold-open-dxvessel-B.png)
+![折叠卡收起](docs/screenshots/v0.2.0-fold-closed-dxvessel-B.png)
+按一次影像报告折叠（原生 details，可打印全展开），新报告不覆盖旧记录。
+
+### 四肢血压成对记录
+![四肢血压](docs/screenshots/v0.2.0-bp-pairs-B.png)
+左臂/右臂/双踝成对录入，自动显示「较上次差值」；部位不全时如实写「未计算差值」，不做分级。
+
+### 病情一图秀
+![一图秀](docs/screenshots/v0.2.0-one-chart-B.png)
+每条线按该指标全期 min/max 归一化并标注「不可比」；单点不连线；事件条与曲线分层展示；数据点可点开看原始来源。
+
+### 用药与减量阶梯
+![用药阶梯](docs/screenshots/v0.2.0-meds-taper-B.png)
+激素剂量按日期排成阶梯（仅回顾，不是建议）；医生原话单独留痕在「用药说明与医嘱」。
+
+### 疾病概要整页（顶栏 ?）
+![疾病概要](docs/screenshots/v0.2.0-disease-primer-open.png)
+四段固定：定义 → 医学资料规范和指南情况 → 治疗全景 → 发展趋势；每段强制来源行；趋势段只写已发生事实并带日期。
+
+### AI 草稿（未接入，只填不发）
+![AI 草稿](docs/screenshots/v0.2.0-ai-draft-dashboard.png)
+每页「和 AI 讨论」只把预写提示词放进右侧面板，标明「未接通任何模型，不会发送」；私密条目不进 AI 上下文。
+
+## 怎么用
+
+1. 打开 `prototypes/v0.2/index.html`（file:// 双击即可，或 `python3 -m http.server` 后访问）。
+2. 点左上角头像切换 A（刚确诊记录少）/ B（多年随访记录多）两套合成档案——整页数据、图表、时间线、导出全部联动不串档。
+3. 顶栏顺序：资料目录 → AI 对话 → 设置 → 大字 Aa → ?（疾病概要）→ 版本。
+4. 「待核对候选」页演示导入 → 解析 → 候选 → 核对入库 / 拒收零副作用链路。
+5. 开发版（接入 DSH Desktop 后）由宿主资料目录授权读取真实文件；原型不读写任何真实文件。
+
+## 数据与口径
+
+- **演示数据唯一源**：`prototypes/v0.2/demo-data.js`；改一个值，看板/卡片/图表/时间线/导出同步变。
+- **私密三出口**：导出、AI 上下文、摘要预览共用同一过滤函数；页内显示「N 条中私密 M 条」。
+- **无判读列**：schema 不入库 diagnosis/risk_level/activity_score 等派生判定；活动度评分只作「医生原文 + 待核」占位。
+- **非肿瘤表达**：活动期—稳定期 + 受累血管节段 + 随访节律；无分期/线序/疗效/生存期语义。
+- **来源分级**：A 原件（86 指南 PDF、托珠单抗 NMPA 说明书）已取得，见 `docs/CLINICAL-DATA.md`；B 官方目录/期刊页面；D 二手；未取得一律标注。
+
+## 开发
 
 ```bash
-npm install
-npm run check
-npm run pack:check
-npm pack
+npm run check          # 静态检查链（staticPass=true）
+node scripts/probe-tak-m2.mjs        # M2 原型探针（32 条真实浏览器断言）
+node scripts/probe-page-view.mjs     # 家族整页视图探针（starter 契约自检）
+node scripts/probe-disease-primer.mjs --self-test  # 疾病概要探针
+node scripts/shoot-prototype.mjs     # 重新生成 README 截图
 ```
 
-`npm run check` 只保证"能装"（语法 + 装包合同），第一天就该是绿的。`npm run audit` 管"还是不是家族里的一员"：版本三处一致、`lib/layout.js` 面板参数单一来源、检查链完整、文档与密钥卫生，**只看代码与文件，不看文档自述**。新项目刚生成时 audit 必然有 fail，那是待办清单；交付/发布前必须清零，存在 fail 不得发布（`npm run release:check` 一次跑完两者）。
-
-跑的时间点：**每次改完**跑 `check`；**G2 原型确认后、写业务代码前**先跑一次 `audit`（这时缺的多是 `lib/layout.js`、`VERSION` 这类结构，越早补越便宜）；**交付/装机前**必须跑 `release:check`；**发布或投稿前**把 `npm run audit --json` 的 `xx/xx 通过 · N 失败 · M 待人工` 抄进 `docs/RELEASE.md` 的「家族一致性」一行。`✗` 是结构缺口（补齐，或在 `docs/DEV-REQUIREMENTS-<日期>.md` 写明偏离理由并由用户确认），`!` 是需人工判断的项（逐条给「已人工确认 / 确实没有」）。
-
-`npm install` 可能按 npm 策略解析 peer；勿为消警告重复打包宿主 runtime。客户端本身是单文件；引入 TS/组件库后需添加构建步骤并保留单文件导出。
-
-本地安装入口以当前 Desktop/CLI 帮助为准。安装后按 [docs/06-VALIDATION-AND-RELEASE.md](docs/06-VALIDATION-AND-RELEASE.md) 与官方自测完成真实 UI 验收，并填写 [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md)。静态检查不代表已加载。
-
-Logo 来源与使用限制见 assets/README.md。许可证、作者、仓库/发布策略由本项目维护者确认后填写；模板默认为 private/UNLICENSED。
-
-感谢小x宝社区、DataElement 社区，以及 sam / hhx / 繁华的 ❤️ 贡献。
-
-初始化来源记录见 `.dsh-wb-starter.json`。更新社区脚手架不会覆盖本项目；需要升级时先用相同确认配置在临时目录生成，再审阅差异。CLI 用法见 [docs/CLI-GIT.md](docs/CLI-GIT.md)。
-
-## HTML先行与数据演进
-
-业务开发前先交付HTML交互工作台原型、实际预览并由用户确认版本/hash和范围。数据设计先区分领域事实、流程状态和页面读模型，走查前端/流程变化、兼容与迁移；原型对象不直接作为表。见[规范](docs/14-HTML-AND-DATA-CONTRACT.md)。
+- 结构基准：cervical-workbench（外壳/客户端链路底本）+ breast-cancer v0.4（指标卡/眉题）+ aml-workbench（AI 面板/泳道/折叠卡）；只抄结构与元素体系，不抄病种语义。一级导航重名率实测最高 50%（≤70%），见 docs/FAMILY-CONTRAST.md。
+- 里程碑与闸口：docs/DEV-PLAN.md；进度：PROGRESS.md；签认：docs/signoffs/。
+- 许可与品牌：品牌占位名待授权；数据合同冻结见 schema/freeze-contract.json。
