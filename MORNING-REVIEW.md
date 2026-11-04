@@ -49,3 +49,4 @@
   - probe A5/P4 假红（smooth 滚动异步 + history.back 污染）→ instant 滚动 + 行为学证明（L60 已回流）。
   - pnpm 装机 peer 依赖 ✕ 提示为兄弟仓共有的既有状态，装机完成且文件实查 0.2.0。
 - **失效风险**：M8 PR 走前须先 pull 最新 main（31 号）；装机包与 0.2.0 tgz 绑定，改包必升版重装。
+- **starter 回流为本地 commit**（xyb-workbench-starter 仓 e58e749，1.10.0-rc.12）：starter 为社区共享仓，夜班不向共享仓 push，晨审追认后再推。
