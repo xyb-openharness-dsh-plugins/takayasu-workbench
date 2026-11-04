@@ -176,8 +176,8 @@
     }
     var flipped = !!state.flipped[code];
     var back;
-    if (points.length === 1) {
-      back = '<span class="na">只有 1 次记录，暂不连线</span>';
+    if (points.length <= 1) {
+      back = '<span class="na">' + (points.length === 0 ? '暂无记录' : '只有 1 次记录，暂不连线') + '</span>';
     } else {
       var recent = points.slice(-8);
       var xy = toXY(recent, 170, 62, { l: 6, r: 6, t: 6, b: 6 });
@@ -292,8 +292,12 @@
         var d = smoothPath(xy.map(function (p) { return [p[0], p[1]]; }));
         pathChanged.push(d);
         out += '<path fill="none" stroke="' + colors[si % 3] + '" stroke-width="2" d="' + d + '"></path>';
+        // 每个数据点一个可点击圆点（MT09：点数据点打开原始来源）
+        xy.forEach(function (q) {
+          out += '<circle class="pt" cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="' + (q === xy[xy.length - 1] ? 4.5 : 3) +
+            '" fill="' + colors[si % 3] + '" data-date="' + esc(q[2].date) + '" data-value="' + esc(q[2].value) + '" data-src="' + esc(q[2].org || '来源未填') + '"></circle>';
+        });
         var last = xy[xy.length - 1];
-        out += '<circle cx="' + last[0].toFixed(1) + '" cy="' + last[1].toFixed(1) + '" r="4" fill="' + colors[si % 3] + '"></circle>';
         out += '<text x="' + (last[0] - 8).toFixed(1) + '" y="' + (last[1] - 8).toFixed(1) + '" font-size="12" text-anchor="end">' + esc(pts[pts.length - 1].value) + ' ' + esc(s.def.unit) + '</text>';
       }
       out += '<text x="8" y="' + (top + 12) + '" font-size="12" fill="var(--ink-2)">' + esc(s.def.name) + '</text>';
@@ -925,6 +929,14 @@
 
   /* ---------- 整页视图（32 号） ---------- */
   var pvState = { stack: [], returnFocus: null, scroll: 0 };
+  function pvDismiss() {
+    // 唯一退栈路径：Esc / 返回键 / 关闭按钮都汇到这里（A4 焦点恢复、A5 滚动恢复）
+    if (!pvState.stack.length) return;
+    var el = pvState.stack.pop();
+    el.remove();
+    if (pvState.returnFocus && pvState.returnFocus.focus) { try { pvState.returnFocus.focus(); } catch (e) {} }
+    $('#main').scrollTop = pvState.scroll;
+  }
   function openPageView(title, bodyHtml) {
     var el = document.createElement('div');
     el.className = 'pv-overlay';
@@ -938,33 +950,21 @@
     pvState.stack.push(el);
     pvState.returnFocus = document.activeElement;
     pvState.scroll = $('#main').scrollTop;
-    el.querySelector('[data-pv="back"]').addEventListener('click', pvBack);
-    el.querySelector('[data-pv="close"]').addEventListener('click', pvClose);
+    el.querySelector('[data-pv="back"]').addEventListener('click', function () { history.back(); });
+    el.querySelector('[data-pv="close"]').addEventListener('click', function () {
+      pvDismiss();
+      if (location.hash.indexOf('#page=') === 0) history.back();
+    });
     history.pushState({ pv: pvState.stack.length }, '', '#page=' + encodeURIComponent(title));
     el.querySelector('.pv-body').scrollTop = 0;
   }
-  function pvBack() {
-    history.back();
-  }
-  function pvClose() {
-    if (pvState.stack.length) {
-      var el = pvState.stack.pop();
-      el.remove();
-      if (pvState.returnFocus && pvState.returnFocus.focus) pvState.returnFocus.focus();
-      $('#main').scrollTop = pvState.scroll;
-    }
-    if (location.hash.indexOf('#page=') === 0) history.back();
-  }
   window.addEventListener('popstate', function () {
-    if (pvState.stack.length && !location.hash.match(/^#page=/)) {
-      var el = pvState.stack.pop();
-      el.remove();
-      if (pvState.returnFocus && pvState.returnFocus.focus) pvState.returnFocus.focus();
-    }
+    if (pvState.stack.length && !location.hash.match(/^#page=/)) pvDismiss();
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && pvState.stack.length) {
-      pvState.stack.pop().remove();
+      pvDismiss();
+      if (location.hash.indexOf('#page=') === 0) history.back();
     }
   });
 
@@ -1126,6 +1126,16 @@
 
   /* ---------- 事件 ---------- */
   document.addEventListener('click', function (e) {
+    var pt = e.target.closest && e.target.closest('circle.pt');
+    if (pt) {
+      // MT09：点数据点打开原始来源详情；不翻卡、不改变筛选
+      openPageView('数据点详情（原始来源）',
+        '<div class="card"><h3>' + esc(pt.getAttribute('data-date')) + '</h3>' +
+        '<p>数值：<b>' + esc(pt.getAttribute('data-value')) + '</b></p>' +
+        '<p class="k">来源：' + esc(pt.getAttribute('data-src')) + '（可比组内；解读归医生）</p>' +
+        '<p class="k">整卡未翻面；关闭后焦点回到数据点。</p></div>');
+      return;
+    }
     var btn = e.target.closest('[data-action]');
     if (!btn) return;
     var act = btn.getAttribute('data-action');

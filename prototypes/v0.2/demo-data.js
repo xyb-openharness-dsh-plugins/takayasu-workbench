@@ -116,7 +116,8 @@
       { id: 1, date: '2018-02-28', type: 'CTA（主动脉全程）', place: '省风湿病专科医院', summary: '确诊基线；原件已扫描存档。', originalAvailable: true },
       { id: 2, date: '2019-09-03', type: '血管超声（颈部+腹部）', place: '本地三甲', summary: '随访超声，仅留存报告首页照片。', originalAvailable: false },
       { id: 3, date: '2021-05-14', type: 'MRA（主动脉）', place: '省风湿病专科医院', summary: '复查 MRA。', originalAvailable: true },
-      { id: 4, date: '2024-11-20', type: 'MRA（主动脉+肾动脉）', place: '省风湿病专科医院', summary: '最近一次影像；光盘未数字化。', originalAvailable: false }
+      { id: 4, date: '2024-11-20', type: 'MRA（主动脉+肾动脉）', place: '省风湿病专科医院', summary: '光盘未数字化。', originalAvailable: false },
+      { id: 5, date: '2026-10-26', type: 'MRA（主动脉）', place: '省风湿病专科医院', summary: '年度复查；原件待上传。', originalAvailable: false }
     ],
     metrics: [
       { code: 'esr', points: [
@@ -128,7 +129,9 @@
         { date: '2022-09-08', value: 28, unit: 'mm/h', method: 'Westergren', org: '省风湿病专科医院' },
         { date: '2023-02-14', value: 19, unit: 'mm/h', method: '自动分析仪', org: '市人民医院' },
         { date: '2024-11-18', value: 12, unit: 'mm/h', method: 'Westergren', org: '省风湿病专科医院' },
-        { date: '2025-08-05', value: 10, unit: 'mm/h', method: 'Westergren', org: '省风湿病专科医院' }
+        { date: '2025-08-05', value: 10, unit: 'mm/h', method: 'Westergren', org: '省风湿病专科医院' },
+        { date: '2026-08-14', value: 9, unit: 'mm/h', method: 'Westergren', org: '省风湿病专科医院' },
+        { date: '2026-10-26', value: 11, unit: 'mm/h', method: 'Westergren', org: '省风湿病专科医院' }
       ] },
       { code: 'crp', points: [
         { date: '2018-02-26', value: 38.2, unit: 'mg/L', method: '免疫比浊', org: '省风湿病专科医院' },
@@ -139,7 +142,9 @@
         { date: '2022-09-08', value: 11.7, unit: 'mg/L', method: '免疫比浊', org: '省风湿病专科医院' },
         { date: '2023-02-14', value: 5.2, unit: 'mg/L', method: '乳胶增强', org: '市人民医院' },
         { date: '2024-11-18', value: 2.8, unit: 'mg/L', method: '免疫比浊', org: '省风湿病专科医院' },
-        { date: '2025-08-05', value: 1.9, unit: 'mg/L', method: '免疫比浊', org: '省风湿病专科医院' }
+        { date: '2025-08-05', value: 1.9, unit: 'mg/L', method: '免疫比浊', org: '省风湿病专科医院' },
+        { date: '2026-08-14', value: 1.6, unit: 'mg/L', method: '免疫比浊', org: '省风湿病专科医院' },
+        { date: '2026-10-26', value: 2.1, unit: 'mg/L', method: '免疫比浊', org: '省风湿病专科医院' }
       ] },
       { code: 'hb', points: [
         { date: '2018-02-26', value: 96, unit: 'g/L', method: '血细胞分析仪', org: '省风湿病专科医院' },
@@ -180,7 +185,8 @@
       { id: 5, date: '2021-06-01', place: '随访日', armL: { sys: 118, dia: 76 }, armR: { sys: 97, dia: 63 }, ankleL: null, ankleR: null, note: null },
       { id: 6, date: '2022-10-12', place: '随访日', armL: { sys: 124, dia: 78 }, armR: { sys: 99, dia: 61 }, ankleL: { sys: 136, dia: 84 }, ankleR: { sys: 138, dia: 86 }, note: '血沉回升那阵子，血压也往上走了。' },
       { id: 7, date: '2024-12-02', place: '随访日', armL: { sys: 116, dia: 74 }, armR: { sys: 96, dia: 62 }, ankleL: { sys: 134, dia: 82 }, ankleR: { sys: 136, dia: 84 }, note: null },
-      { id: 8, date: '2025-10-28', place: '家中自测', armL: { sys: 114, dia: 72 }, armR: { sys: 95, dia: 60 }, ankleL: null, ankleR: null, note: null }
+      { id: 8, date: '2025-10-28', place: '家中自测', armL: { sys: 114, dia: 72 }, armR: { sys: 95, dia: 60 }, ankleL: null, ankleR: null, note: null },
+      { id: 9, date: '2026-10-26', place: '随访日', armL: { sys: 115, dia: 73 }, armR: { sys: 96, dia: 61 }, ankleL: { sys: 133, dia: 81 }, ankleR: { sys: 135, dia: 83 }, note: null }
     ],
     meds: [
       { id: 1, date: '2018-03-06', drug: '甲泼尼龙（住院）', doseMg: 40, perDay: true, cat: '糖皮质激素', note: '静脉起始后改口服，剂量按住院医嘱。', source: '住院小结' },
@@ -193,7 +199,8 @@
       { id: 8, date: '2022-10-20', drug: '泼尼松', doseMg: 15, perDay: true, cat: '糖皮质激素', note: '血沉回升，加回 15mg。', source: '门诊病历' },
       { id: 9, date: '2023-05-30', drug: '托珠单抗（咨询记录）', doseMg: null, perDay: false, cat: '生物制剂', note: '医生提到"如果再复发可以考虑生物制剂"，未开始，仅记这句话。', source: '门诊病历' },
       { id: 10, date: '2024-01-18', drug: '泼尼松', doseMg: 10, perDay: true, cat: '糖皮质激素', note: null, source: '门诊病历' },
-      { id: 11, date: '2025-09-03', drug: '吗替麦考酚酯', doseMg: 500, perDay: true, cat: '免疫抑制剂', note: '医生原话：稳定两年了，试着减到半量。', source: '门诊病历' }
+      { id: 11, date: '2025-09-03', drug: '吗替麦考酚酯', doseMg: 500, perDay: true, cat: '免疫抑制剂', note: '医生原话：稳定两年了，试着减到半量。', source: '门诊病历' },
+      { id: 12, date: '2026-10-26', drug: '泼尼松', doseMg: 10, perDay: true, cat: '糖皮质激素', note: '维持 10mg，继续观察。', source: '门诊病历' }
     ],
     events: [
       { date: '2017-11', dateKnown: 'month', type: '症状变化', text: '开始爬楼头晕、左臂摸不到脉搏（仅记得月份）', source: '本人回忆' },
@@ -208,7 +215,9 @@
       { date: '2024-11-20', type: '影像', text: 'MRA：与 2021 比较范围相仿，左肾动脉起始部有描述', source: '影像报告' },
       { date: '2025-03-12', type: '检查', text: '心超随访：主动脉瓣反流程度与上次相仿（医生口述）', source: '随访记录' },
       { date: '2025-08-05', type: '就诊', text: '年度随访：指标稳定，继续减量', source: '门诊病历' },
-      { date: '2025-10-28', type: '用药', text: '吗替麦考酚酯 750mg → 500mg（试减）', source: '门诊病历' }
+      { date: '2025-10-28', type: '用药', text: '吗替麦考酚酯 750mg → 500mg（试减）', source: '门诊病历' },
+      { date: '2026-08-14', type: '就诊', text: '年度随访：指标稳定', source: '门诊病历' },
+      { date: '2026-10-26', type: '影像', text: 'MRA 年度复查（报告待录入）', source: '随访记录' }
     ],
     screenings: [
       { id: 1, date: '2020-04-16', item: '心脏超声（主动脉瓣反流）', plan: '医生说每年一次', lastResult: '主动脉瓣轻度反流（医生口述）', nextDue: null, originalAvailable: false },
