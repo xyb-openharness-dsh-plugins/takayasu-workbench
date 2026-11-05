@@ -112,13 +112,20 @@ push('本次启动', bootAt ? bootAt.toISOString() : '未运行，无启动时�
 /* ---------- 4. 本次运行段里与本包相关的日志 ---------- */
 // 注意：`web boot: 1 entry did not activate` 这行**不带包名**，只过滤包名会漏掉整条失败信号
 // （这个脚本的第一版就漏了，由 test/desktop-load.test.mjs 的反例抓出来）
-const mine = segment.filter((l) => /head-neck-workbench|did not activate|plugin-recovery|plugin-removal/.test(l))
-const failures = mine.filter((l) =>
-  /did not activate/.test(l) ||
-  /plugin-recovery/.test(l) ||
-  new RegExp(`${PKG.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}: failed`).test(l))
-push('本次段相关日志', mine.length ? `${mine.length} 条` : '无', failures.length === 0)
-for (const l of mine.slice(-5)) rows.push({ k: '  日志', v: l.slice(0, 200), ok: !/did not activate|failed/.test(l) })
+// 判据精化（takayasu 2026-11-05 回收）：裸「N entries did not activate」不带包名，但可以
+// 用「本次段里是否有**本包名 + 失败词**的行」判定失败归属；同时列出实际失败的模块名，
+// 避免把兄弟仓的存量问题（如 esophageal 缺 demo/ 的 L53 坑）算到本包头上。
+const pkgRe = new RegExp(PKG.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+const bareWarn = segment.filter((l) => /dsh: warning: \d+ entr(?:y|ies) did not activate/.test(l))
+const myErrors = segment.filter((l) => pkgRe.test(l) && /failed|did not activate|Cannot find module|ERR_MODULE|duplicate/i.test(l))
+const failedModules = [...new Set(segment
+  .filter((l) => /did not activate|failed to import|duplicate prefix/.test(l) && /\(([+@][^)]+)\)/.test(l))
+  .map((l) => (l.match(/\(([+@][^)]+)\)/) || [])[1])
+  .filter(Boolean))]
+const implicated = myErrors.length > 0 || failedModules.some((m) => m.includes(PKG) || m.includes('takayasu'))
+push('本次段相关日志', `${bareWarn.length} 条通用激活警告；本包名错误行 ${myErrors.length} 条`, !implicated)
+for (const l of bareWarn.slice(-2)) rows.push({ k: '  通用警告', v: l.slice(0, 160) + '（失败归属：' + (failedModules.join(', ') || '未能从日志定位') + '；本包' + (implicated ? '在列' : '不在列') + '）', ok: !implicated })
+for (const l of myErrors.slice(-5)) rows.push({ k: '  本包错误', v: l.slice(0, 200), ok: false })
 
 /* ---------- 5. 服务端 store 数据目录 ---------- */
 push('dshHomePath 数据目录', existsSync(DATA_DIR)
@@ -148,8 +155,8 @@ console.log('界面加载核验（证据全部来自宿主留下的事实）\n')
 for (const r of rows) console.log(`  ${r.ok ? '·' : '!'} ${r.k.padEnd(width)}  ${r.v}`)
 console.log('')
 
-if (failures.some((l) => /did not activate/.test(l))) {
-  console.log('✗ 结论：**本次运行**里插件激活失败（宿主日志有「did not activate」原文，见上）。')
+if (implicated) {
+  console.log('✗ 结论：**本次运行**里本包激活失败（本包名出现在错误行，见上）。')
   console.log('  先跑 npm run smoke:activate 复现，再对照宿主 7 条 register 校验。')
   process.exit(1)
 }

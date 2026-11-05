@@ -1,13 +1,28 @@
 界面加载核验（证据全部来自宿主留下的事实）
 
-  · DSH Desktop harness  运行中（本次段 24 行日志）
-  · 上次退出                 2026-11-04T01:11:04.494Z
-  · 装机目录                 已安装 v0.2.0
-  · 装机 mtime             2026-11-04T18:45:59.967Z
-  · 本次启动                 2026-11-04T02:00:30.353Z
-  · 本次段相关日志              无
-  ! dshHomePath 数据目录     未生成（服务端一次都没跑过）
-  ! 宿主工作台清单              不含 xyb-openharness-dsh-plugins/takayasu-workbench
-  · profile bundles      60 项，兄弟工作台 43 个，含本包 true
+  · DSH Desktop harness  运行中（本次段 444 行日志）
+  · 上次退出                 2026-11-04T22:54:44.043Z
+  · 装机目录                 已安装 v0.3.2
+  · 装机 mtime             2026-11-04T22:50:44.795Z
+  · 本次启动                 2026-11-04T22:54:44.043Z
+  · 本次段相关日志              1 条通用激活警告；本包名错误行 0 条
+  ·   通用警告               [2026-11-04T22:54:47.539Z] + 4453ms [stderr] dsh: warning: 4 entries did not activate（失败归属：@xyb-community/esophageal-workbench, @xyb-community/gastric-workbench, @xyb-community/gist-workbench, @xyb-community/colorectal-workbench；本包不在列）
+  · dshHomePath 数据目录     已生成（takayasu-workbench.sqlite, takayasu-workbench.sqlite-shm, takayasu-workbench.sqlite-wal）
+  · 宿主工作台清单              含 xyb-openharness-dsh-plugins/takayasu-workbench
+  · profile bundles      61 项，兄弟工作台 44 个，含本包 true
 
-⏸ 结论：**这一轮启动早于装机**，插件本轮不可能被加载——需要完整退出再打开。
+✓ 结论：宿主已加载该工作台（数据目录或工作台清单有它的痕迹）。
+  这只证明「宿主侧加载成功」，页面长什么样仍需人眼确认一次。
+
+── 2026-11-05 上午增补（真机走查服务端侧证据，无人值守可测部分全部实测）──
+1. 宿主 webserver 端口实测（curl，本机 127.0.0.1:43129）：
+   GET /takayasu/                 → 鉴权拦截（{"error":"Authentication required"}）——路由已注册、按会话授权生效
+   GET /api/takayasu/api/health   → 同上（鉴权前拦截，符合 createHostHandler 契约）
+2. 真宿主数据目录盘点（dshHomePath('takayasu')，实查 sqlite）：
+   22 表；迁移账本 0001+0002+0003 全应用；profile 2 / metric_point 49 / event 20 /
+   medication 15 / bp_pair 10 / vessel_record 4 / hospital 3 / document 8 /
+   feeling_note 7 / candidate_fact 4 —— 服务端读模型在真宿主完成播种。
+3. 本包激活归属澄清：本次段「4 entries did not activate」全部为兄弟仓存量
+   （esophageal / gastric / gist / colorectal——LESSONS L53 的 pack 白名单缺 demo/ 坑），
+   本包名在本段 0 条错误行。verify-desktop-load.mjs 判据已精化（按包名归属判定）。
+4. 剩余：在 DSH Desktop 界面内打开「小弓宝」面板的人眼确认与真机截图（需已授权会话）。

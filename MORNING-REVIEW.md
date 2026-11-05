@@ -2,6 +2,8 @@
 
 ## 一、一句话结论
 
+（再增补 2026-11-05 真机轮）用户重启 DSH Desktop 后：本包已在宿主工作台清单、数据目录 sqlite 播种完成、宿主 webserver 路由实测注册（401 鉴权拦截=按会话授权生效）；真机轮发现并修复 /ttp duplicate prefix 路由冲突（0.3.2）。仅剩：已授权会话内人眼确认面板 + 真机截图（V3）。
+
 （增补 2026-11-05 上午）追加执行 FAMILY-INSPECTOR 全项审查→修复轮：16 组失败清零，探针扩至 57/57、audit 44/44、tests 21/21，版本 0.3.0 已重装 Desktop profile（界面加载仍待重启）。
 
 大动脉炎（TAK）工作台「小弓宝 ArchPal」从认领（Issue #59）走完 M0–M6 + M9：G1–G3、V1 自动签认、V2 装机产物层过（DSH Desktop harness profile 已装 v0.2.0 + bundle 登记），**未停闸**；V2 界面加载与 V3 真机闭环待人工（宿主本轮启动早于装机，需重启 DSH Desktop）；M7 tag/release 与 M8 BACKLOG PR 按冻结规则只备草稿。
@@ -25,6 +27,9 @@
 | V3（真机业务闭环） | 待人工（依赖 V2 第 6 条） | — |
 
 ## 四、待用户决策项
+
+0. **V3 走查**：在 DSH Desktop 内新建会话 → 打开「小弓宝」面板 → 人眼确认 + 截图发我（或授权我连 CDP 截图）。
+0b. **兄弟仓存量**：esophageal/gastric/gist/colorectal 四仓因 pack 缺 demo/ 目录激活失败（LESSONS L53 同款）——是否由本轮顺手修复（改各自仓 files 白名单+重装）。
 
 1. **重启 DSH Desktop**（本轮启动早于装机）：完整退出 → 重开 → 新建会话 → 走查 → `node scripts/verify-desktop-load.mjs` 复核 → 真机截图刷新 README（V2 第 6/7 条、V3）。
 2. **品牌占位名**「小弓宝 ArchPal」是否沿用（主动脉弓意象；陶土红主色）。
