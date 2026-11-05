@@ -66,7 +66,8 @@
 
   function build() {
     var d = data();
-    if (!d) return '<p class="dp-empty">疾病概要数据缺失。</p>';
+    if (!d) return '<div class="dp-inner"><div class="notice warn"><b>疾病概要数据未加载</b>（DISEASE_PRIMER 缺失）。' +
+      '诊断：协议 ' + location.protocol + ' · 路径 ' + location.pathname + ' · primer-data.js 是否 404 请看网络面板。请截图反馈。</div></div>';
     var out = '<div class="dp-inner">';
     out += '<p class="dp-lead"><b>' + d.brand + '</b> · ' + d.updated + '</p>';
     out += '<div class="notice">' + d.registration + '</div>';
@@ -107,16 +108,30 @@
     });
   }
 
+  let histOk = true;
   function show() {
-    mount();
-    opener = document.activeElement;
-    prevScroll = window.scrollY || 0;
-    el.hidden = false;
-    document.documentElement.classList.add('dp-lock');
-    history.pushState({ dp: 1 }, '', '#disease-primer');
-    var t = document.querySelectorAll('[data-primer-open]')[0];
-    if (t) t.setAttribute('aria-expanded', 'true');
-    el.querySelector('.dp-body').scrollTop = 0;
+    try {
+      mount();
+      opener = document.activeElement;
+      prevScroll = window.scrollY || 0;
+      el.hidden = false;
+      document.documentElement.classList.add('dp-lock');
+      try { history.pushState({ dp: 1 }, '', '#disease-primer'); histOk = true; }
+      catch (e) { histOk = false; console.warn('[takayasu] 宿主环境不支持概要历史导航（面板仍打开）', e); }
+      var t = document.querySelectorAll('[data-primer-open]')[0];
+      if (t) t.setAttribute('aria-expanded', 'true');
+      el.querySelector('.dp-body').scrollTop = 0;
+      try { el.querySelector('.dp-body').focus(); } catch (e2) {}
+    } catch (err) {
+      /* 兜底可见化：任何异常都不许「点了没反应」 */
+      try {
+        mount(); el.hidden = false;
+        el.querySelector('.dp-body').innerHTML =
+          '<div class="dp-inner"><div class="notice warn"><b>疾病概要打开异常</b>：' + String(err && err.message || err) +
+          '（环境诊断：DISEASE_PRIMER ' + (window.DISEASE_PRIMER ? '已加载' : '未加载') + ' · ' +
+          '协议 ' + location.protocol + ' · 路径 ' + location.pathname + '）。请截图此提示反馈。</div></div>';
+      } catch (e2) { console.error('[takayasu] primer 兜底渲染也失败', e2); }
+    }
   }
 
   function hide() {
@@ -132,18 +147,18 @@
   function close() {
     if (!el || el.hidden) return;
     hide();
-    if (history.state && history.state.dp) history.back();
+    if (histOk && history.state && history.state.dp) { try { history.back(); } catch (e) {} }
   }
 
   function boot() {
     mount();
-    var triggers = document.querySelectorAll('[data-primer-open]');
-    for (var i = 0; i < triggers.length; i++) {
-      triggers[i].addEventListener('click', function (e) {
-        e.preventDefault();
-        show();
-      });
-    }
+    /* 事件委托：绑定在 document 上，业务重渲染/宿主换 key 重挂 iframe 都不影响 */
+    document.addEventListener('click', function (e) {
+      var t = e.target && e.target.closest && e.target.closest('[data-primer-open]');
+      if (!t) return;
+      e.preventDefault();
+      show();
+    }, true);
     if (location.hash === '#disease-primer') show();
   }
 
