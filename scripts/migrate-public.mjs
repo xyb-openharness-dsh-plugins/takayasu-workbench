@@ -42,6 +42,11 @@ function migrateApp(s) {
 ;(function () {
   var apiBase = "__API_BASE__"; /* 令牌会被宿主注入成字符串字面量；禁止把令牌挂在 window 对象上（注入后会语法错误，0.2.0 装机教训） */
   if (location.protocol === 'file:') return;
+  /* 部署态：AI 对话由宿主原生面板承载（34 号契约）——本地演示坞与「模拟回复自检」整体退场 */
+  if (window.parent !== window) {
+    var dock = document.getElementById('agent-dock');
+    if (dock && dock.parentNode) dock.parentNode.removeChild(dock);
+  }
   fetch(apiBase + '/api/bootstrap').then(function (r) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return r.json();

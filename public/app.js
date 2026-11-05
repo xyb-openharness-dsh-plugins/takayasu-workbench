@@ -1456,15 +1456,15 @@
     body.scrollTop = body.scrollHeight;
   }
   function agentDraft(prompt, source) {
+    /* 部署形态：AI 对话由宿主原生面板承载（34 号契约）——只投递草稿，不渲染本地演示坞 */
+    if (window.parent !== window) {
+      try { window.parent.postMessage({ type: 'takayasu:agent-draft', prompt: prompt, send: false }, '*'); } catch (e) { /* 无宿主 */ }
+      toast('已把问题放进右侧 AI 会话草稿（不自动发送）');
+      return;
+    }
     state.aiSession.push({ role: 'me', text: '【草稿 · 未发送】' + prompt + (source ? '（来源：' + source + '）' : '') });
     if (!state.aiOpen) agentToggle(true);
     else renderAgentIntro();
-    // agent-draft 协议：接入宿主时由宿主监听；原型内只入草稿，绝不自动发送
-    try {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: 'takayasu:agent-draft', prompt: prompt, send: false }, '*');
-      }
-    } catch (e) { /* file:// 独立打开时忽略 */ }
     toast('草稿已放入 AI 面板（未发送）');
   }
   function buildPagePrompt() {
@@ -1570,7 +1570,12 @@
       case 'open-store':
         toast('资料目录（演示）：开发版由宿主授权真实目录');
         break;
-      case 'agent': agentToggle(); break;
+      case 'agent':
+        if (window.parent !== window) {
+          try { window.parent.postMessage({ type: 'takayasu:agent-open' }, '*'); } catch (e) { /* 无宿主 */ }
+          toast('已请求打开右侧原生 AI 会话');
+        } else { agentToggle(); }
+        break;
       case 'agent-size':
         var size = btn.getAttribute('data-size');
         state.aiWidth = size === 'narrow' ? 25 : (size === 'wide' ? 45 : 35);
@@ -1921,6 +1926,11 @@
 ;(function () {
   var apiBase = "__API_BASE__"; /* 令牌会被宿主注入成字符串字面量；禁止把令牌挂在 window 对象上（注入后会语法错误，0.2.0 装机教训） */
   if (location.protocol === 'file:') return;
+  /* 部署态：AI 对话由宿主原生面板承载（34 号契约）——本地演示坞与「模拟回复自检」整体退场 */
+  if (window.parent !== window) {
+    var dock = document.getElementById('agent-dock');
+    if (dock && dock.parentNode) dock.parentNode.removeChild(dock);
+  }
   fetch(apiBase + '/api/bootstrap').then(function (r) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return r.json();

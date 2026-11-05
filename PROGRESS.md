@@ -21,6 +21,12 @@
 | M7/M8 | 冻结草稿 | docs/release-draft/（M7 tag/release 草案含 sha256；M8 BACKLOG 状态行改前改后 + PR 说明）（9ea879d） |
 | M9 | 完成 | starter LESSONS L57–L60、templates/check-schema.mjs 模板化、starter 1.10.0-rc.12（check-starter pass、tests 67/67） |
 
+## AI 契约轮（2026-11-06 增补，v0.3.4）
+
+- 修复部署版「AI 按钮无效/重复、AI 对话 demo 内容误开发」：部署态本地演示坞与「模拟回复自检」整体移除，AI 由宿主原生面板承载——顶栏「AI 对话」→ takayasu:agent-open；各页「和 AI 讨论」→ takayasu:agent-draft（send:false 只填不发）；独立打开保留演示坞降级（Q16）。
+- 新增 scripts/probe-public-hosted.mjs（6 条部署态断言，6/6）；外壳 onMessage 已带 event.source + origin 校验（34 号 Q15）。
+- 回归：probe-tak-m2 57/57、primer 10/10、tests 21/21、audit 44/44、check staticPass=true；0.3.4 已重装 profile。
+
 ## 真机轮（2026-11-05 上午增补）
 
 - 用户重启 DSH Desktop：宿主工作台清单含本包，dshHomePath 数据目录生成（sqlite 22 表 + 迁移账本 3 条 + 播种完成）。
