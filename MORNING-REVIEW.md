@@ -29,7 +29,7 @@
 ## 四、待用户决策项
 
 0. **V3 走查**：在 DSH Desktop 内新建会话 → 打开「小弓宝」面板 → 人眼确认 + 截图发我（或授权我连 CDP 截图）。
-0b. **兄弟仓存量**：esophageal/gastric/gist/colorectal 四仓因 pack 缺 demo/ 目录激活失败（LESSONS L53 同款）——是否由本轮顺手修复（改各自仓 files 白名单+重装）。
+0b. ✅ **兄弟仓存量已修**（2026-11-05）：esophageal/gastric/gist/colorectal 四仓 files 白名单补 demo/ + 升版 0.1.3 + 已 push + 已重装 profile（demo/build-demo-data.mjs 随包实查）。等待下次 Desktop 重启后激活干净。
 
 1. **重启 DSH Desktop**（本轮启动早于装机）：完整退出 → 重开 → 新建会话 → 走查 → `node scripts/verify-desktop-load.mjs` 复核 → 真机截图刷新 README（V2 第 6/7 条、V3）。
 2. **品牌占位名**「小弓宝 ArchPal」是否沿用（主动脉弓意象；陶土红主色）。
@@ -39,6 +39,8 @@
 6. **0 访谈 0 临床审核**：是否按 USER-RESEARCH §四访谈计划启动补位。
 
 ## 五、消耗
+
+（真机轮补充）本轮额外完成：L53 四兄弟仓修复（4 commit push + 4 tgz 重装）、verify-desktop-load 判据精化（激活失败按包名归属）、真宿主 sqlite/webserver 实测。
 
 - 时长：窗口 23:00 起约 4 小时实际开发（01:31 会话接手 → 02:50 收尾），远低于 08:00 时间盒。
 - token：以客户端可见数据为准（本报告写不出精确值——客户端 UI 数据未接入；晨审时可在客户端查本次会话用量）。
