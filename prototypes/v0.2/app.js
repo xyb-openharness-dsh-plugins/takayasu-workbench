@@ -1439,6 +1439,51 @@
       '</ul>');
   }
 
+  /* ---------- 疾病概要兜底渲染器（不依赖 primer.js 事件链；部署版实测防失效） ---------- */
+  function openPrimerDialog() {
+    var d = window.DISEASE_PRIMER;
+    if (!d) {
+      dialog('疾病概要', '<div class="notice warn"><b>疾病概要数据未加载</b>（DISEASE_PRIMER 缺失）。诊断：协议 ' + esc(location.protocol) + ' · 路径 ' + esc(location.pathname) + '。请截图反馈。</div>');
+      return;
+    }
+    var html = '<div class="dp-inner">';
+    html += '<p class="dp-lead"><b>' + esc(d.brand) + '</b> · ' + esc(d.updated) + '</p>';
+    html += '<div class="notice">' + esc(d.registration) + '</div>';
+    d.sections.forEach(function (sec) {
+      html += '<section class="dp-section"><h3>' + esc(sec.title) + '</h3>';
+      if (sec.intro) html += '<p class="dp-lead">' + esc(sec.intro) + '</p>';
+      if (sec.points && sec.points.length) {
+        html += '<ul class="dp-points">' + sec.points.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul>';
+      }
+      if (sec.groups && sec.groups.length) {
+        html += sec.groups.map(function (g) {
+          return '<div class="dp-group"><h4>' + esc(g.label) + '</h4><ul class="dp-points">' + g.points.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul></div>';
+        }).join('');
+      }
+      if (sec.table && sec.table.head && sec.table.rows) {
+        html += '<table class="dp-table"><thead><tr>' + sec.table.head.map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+          sec.table.rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + (c && typeof c === 'object' ? esc(c.text) : esc(c)) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
+      }
+      if (sec.sources && sec.sources.length) {
+        html += '<p class="dp-src"><b>来源</b>' + sec.sources.map(function (s) {
+          var phrase = s.original ? '原件已取得' : (s.entry ? '官方入口' : '未取得原件，据二次来源');
+          return esc(s.org + ' · ' + s.doc + '（' + phrase + '）');
+        }).join(' ｜ ') + '</p>';
+      }
+      html += '</section>';
+    });
+    html += '</div>';
+    dialog('疾病概要（诊断兜底渲染 · v' + esc(APP_INFO.version) + '）', html);
+  }
+  function openPrimerGuarded() {
+    /* 先让 primer.js 的覆盖层尝试；200ms 内没开出来 → 兜底 dialog（防双开） */
+    setTimeout(function () {
+      var over = document.querySelector('.dp-overlay');
+      if (!over || over.hidden) openPrimerDialog();
+    }, 220);
+  }
+  window.__TAK_PRIMER_FALLBACK__ = openPrimerDialog;
+
   /* ---------- AI 面板 + agent-draft ---------- */
   function agentToggle(force) {
     state.aiOpen = force !== undefined ? force : !state.aiOpen;
@@ -1554,6 +1599,12 @@
         '<p class="k">整卡未翻面；关闭后焦点回到数据点。</p></div>');
       return;
     }
+    var pTrigger = e.target.closest && e.target.closest('[data-primer-open]');
+    if (pTrigger) {
+      e.preventDefault();
+      openPrimerGuarded();
+      return;
+    }
     var btn = e.target.closest('[data-action]');
     if (!btn) return;
     var act = btn.getAttribute('data-action');
@@ -1630,6 +1681,7 @@
       case 'primer-open-soft':
         var trigger = $$('[data-primer-open]')[0];
         if (trigger) trigger.click();
+        openPrimerGuarded();
         break;
       case 'verify': {
         var id = btn.getAttribute('data-id');
@@ -1907,7 +1959,8 @@
           '疾病概要入口（[data-primer-open]）：' + document.querySelectorAll('[data-primer-open]').length + ' 个',
           '档案：' + (window.TAK_DEMO ? Object.keys(window.TAK_DEMO.profiles).join('/') : '—'),
           '脚本错误：' + ((window.__ERRORS__ || []).length ? (window.__ERRORS__.slice(-5).join(' ｜ ') || '无') : '无'),
-          '版本：' + (window.APP_INFO ? window.APP_INFO.version : '?') + '（诊断对照装机包版本，不一致 = 宿主缓存旧包）'
+          '版本：v' + APP_INFO.version + '（对照装机包版本；不一致 = 宿主缓存旧包）',
+          '概要用例兜底：' + (typeof window.__TAK_PRIMER_FALLBACK__ === 'function' ? '可用（app.js 内建渲染器）' : '不可用')
         ];
         dialog('运行诊断（截图反馈用）', '<div class="card k" style="font-size:13px">' + facts.map(function (f) { return '<p style="margin:6px 0">' + esc(f) + '</p>'; }).join('') + '</div>');
         break;
@@ -1930,6 +1983,7 @@
   /* ---------- 启动 ---------- */
   render();
   window.__TAK_APP__ = {
+    info: APP_INFO,
     state: state,
     render: render,
     smoothPath: smoothPath,

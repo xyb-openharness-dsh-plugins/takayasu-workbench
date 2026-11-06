@@ -17,6 +17,10 @@ let PORT = 0
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' }
 const server = createServer(async (req, res) => {
   let pathname = decodeURIComponent(new URL(req.url, 'http://x').pathname)
+  if (pathname.startsWith('/blocked-primer/')) {
+    pathname = pathname.replace('/blocked-primer/', '/')
+    if (pathname.endsWith('primer.js')) { res.writeHead(404); res.end(); return }
+  }
   if (pathname === '/hosted-wrap.html') {
     const html = `<!doctype html><html><body><iframe id="wb" src="/public/index.html" style="width:1200px;height:800px"></iframe>
 <script>window.__MSGS__=[];window.addEventListener('message',function(e){window.__MSGS__.push({type:e.data&&e.data.type,send:e.data&&e.data.send,prompt:e.data&&e.data.prompt})})</script>
@@ -85,6 +89,27 @@ server.listen(0, async () => {
   await p2.waitForFunction(() => window.__TAK_APP__, { timeout: 8000 })
   const h5 = await p2.evaluate(() => ({ dock: !!document.getElementById('agent-dock') }))
   t('H5', '独立打开保留演示坞（Q16 降级）', h5.dock, h5)
+
+  // H6：正常路径无双开（overlay 打开，dialog 未开）
+  await page.evaluate(() => { const d = document.querySelector('#wb').contentDocument; const b = [...d.querySelectorAll('[data-action]')].find(x => x.getAttribute('data-action') === 'primer-open-soft'); b.click() })
+  await new Promise(r => setTimeout(r, 500))
+  const h6 = await page.evaluate(() => {
+    const d = document.querySelector('#wb').contentDocument
+    const over = d.querySelector('.dp-overlay')
+    return { overlayOpen: !!over && !over.hidden, dialogOpen: !!(d.querySelector('dialog') && d.querySelector('dialog').open), sectionsInOverlay: d.querySelectorAll('.dp-section').length }
+  })
+  t('H6', '正常路径：primer 覆盖层打开且兜底 dialog 不双开', h6.overlayOpen && !h6.dialogOpen && h6.sectionsInOverlay === 4, h6)
+
+  // H7：primer.js 被阻断时，hero 按钮仍能打开兜底 dialog（4 段）
+  await page.goto(`http://127.0.0.1:${PORT}/blocked-primer/public/index.html`, { waitUntil: 'networkidle0' })
+  await page.waitForFunction(() => window.__TAK_APP__, { timeout: 8000 })
+  await page.evaluate(() => { const b = [...document.querySelectorAll('[data-action]')].find(x => x.getAttribute('data-action') === 'primer-open-soft'); b.click() })
+  await new Promise(r => setTimeout(r, 500))
+  const h7 = await page.evaluate(() => {
+    const dlg = document.querySelector('dialog')
+    return { dialogOpen: !!(dlg && dlg.open), sections: document.querySelectorAll('.dp-section').length, title: dlg ? dlg.querySelector('#dialog-title').textContent : '' }
+  })
+  t('H7', 'primer.js 失效时兜底 dialog 打开（4 段全渲染）', h7.dialogOpen && h7.sections === 4, { sections: h7.sections, title: h7.title })
 
   await browser.close()
   server.close()
