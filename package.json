@@ -1,6 +1,6 @@
 {
   "name": "@xyb-community/takayasu-workbench",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "本机优先的大动脉炎（Takayasu Arteritis）确诊档案与随访资料整理工作台：受累血管节段记录、炎症指标（ESR/CRP）趋势、四肢血压成对对比、激素与免疫抑制剂剂量记录、影像随访与复诊准备（品牌名「小弓宝」为占位，待晨审追认）",
   "private": true,
   "type": "module",

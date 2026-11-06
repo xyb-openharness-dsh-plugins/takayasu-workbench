@@ -6,6 +6,15 @@
 (function () {
   'use strict';
 
+  /* 运行时诊断收集（页脚「诊断」面板消费）：任何脚本错误都留痕 */
+  window.__ERRORS__ = window.__ERRORS__ || [];
+  window.addEventListener('error', function (e) {
+    window.__ERRORS__.push('error: ' + (e.message || '') + ' @ ' + (e.filename || '') + ':' + (e.lineno || ''));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    window.__ERRORS__.push('rejection: ' + String(e.reason || '').slice(0, 160));
+  });
+
   var APP_INFO = { name: '小弓宝 ArchPal', version: '0.3.0', build: '2026-11-05', disease: '大动脉炎（Takayasu Arteritis, TAK）' };
   var PROTO = window.TAK_DEMO;
 
@@ -1890,6 +1899,19 @@
       case 'form-save':
         formSave(btn.getAttribute('data-mode'));
         break;
+      case 'diag': {
+        var facts = [
+          '协议：' + location.protocol + '　路径：' + location.pathname,
+          'iframe 部署形态：' + (window.parent !== window ? '是（宿主内）' : '否（独立打开）'),
+          '脚本加载：app.js ' + (!!window.__TAK_APP__ ? '✓' : '✗') + ' · demo-data ' + (window.TAK_DEMO ? '✓' : '✗') + ' · primer.js ' + (typeof window.DiseasePrimer === 'object' ? '✓' : '✗') + ' · primer-data ' + (window.DISEASE_PRIMER ? '✓' : '✗'),
+          '疾病概要入口（[data-primer-open]）：' + document.querySelectorAll('[data-primer-open]').length + ' 个',
+          '档案：' + (window.TAK_DEMO ? Object.keys(window.TAK_DEMO.profiles).join('/') : '—'),
+          '脚本错误：' + ((window.__ERRORS__ || []).length ? (window.__ERRORS__.slice(-5).join(' ｜ ') || '无') : '无'),
+          '版本：' + (window.APP_INFO ? window.APP_INFO.version : '?') + '（诊断对照装机包版本，不一致 = 宿主缓存旧包）'
+        ];
+        dialog('运行诊断（截图反馈用）', '<div class="card k" style="font-size:13px">' + facts.map(function (f) { return '<p style="margin:6px 0">' + esc(f) + '</p>'; }).join('') + '</div>');
+        break;
+      }
       case 'noop':
         toast('原型未实现：此按钮演示空态的下一步（录入类按钮已陆续实现）');
         break;
